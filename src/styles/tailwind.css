@@ -1,0 +1,8 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-gaming-orange: #ff8c42;
+  --color-gaming-gold: #ffd700;
+  --color-gaming-sky: #87ceeb;
+  --color-gaming-navy: #001f3f;
+}
