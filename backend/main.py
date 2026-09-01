@@ -9,7 +9,7 @@ Documentation at http://localhost:8000/docs
 
 from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, Field
 from typing import List, Optional
 from datetime import datetime
 from enum import Enum
@@ -29,7 +29,7 @@ class PlayerBase(BaseModel):
     """Modelo base con campos comunes"""
     playerName: str = Field(..., min_length=2, max_length=100)
     phone: str = Field(..., min_length=5, max_length=20)
-    email: str = Field(..., regex=r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
+    email: str = Field(..., pattern=r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
     status: StatusEnum = Field(default=StatusEnum.active)
 
 
@@ -60,13 +60,8 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-    ],
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -293,10 +288,14 @@ async def delete_player(player_id: int):
 @app.exception_handler(ValueError)
 async def value_error_handler(request, exc):
     """Maneja errores de validación"""
-    return {
-        "detail": str(exc),
-        "error": "Validation Error"
-    }
+    from fastapi.responses import JSONResponse
+    return JSONResponse(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        content={
+            "detail": str(exc),
+            "error": "Validation Error"
+        }
+    )
 
 
 # ============================================================================

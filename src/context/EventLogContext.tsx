@@ -22,7 +22,7 @@ export function EventLogProvider({ children }: { children: ReactNode }) {
 
   const addEvent = useCallback((type: EventLog['type'], category: string, message: string, details?: Record<string, unknown>) => {
     const event: EventLog = {
-      id: `evt-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      id: `evt-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
       timestamp: new Date().toISOString(),
       type,
       category,

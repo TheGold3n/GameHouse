@@ -1,4 +1,4 @@
-import { useMemo, useState, useCallback } from 'react'
+import { useEffect, useMemo, useState, useCallback } from 'react'
 import { Activity, ChevronLeft, ChevronRight, Plus, Search, ShieldCheck, Users, X } from 'lucide-react'
 import { Footer } from './components/Footer'
 import { Navbar } from './components/Navbar'
@@ -41,10 +41,11 @@ function Dashboard() {
   }, [addEvent])
 
   const handleSort = useCallback((key: keyof Player) => {
-    setSortDirection((sortKey === key && sortDirection === 'asc') ? 'desc' : 'asc')
+    const nextDirection = (sortKey === key && sortDirection === 'asc') ? 'desc' : 'asc'
+    setSortDirection(nextDirection)
     setSortKey(key)
     setPage(1)
-    addEvent('sort', 'Players', `Sorted by ${String(key)} (${sortDirection === 'asc' ? 'desc' : 'asc'})`, { sortKey: key, direction: sortDirection })
+    addEvent('sort', 'Players', `Sorted by ${String(key)} (${nextDirection})`, { sortKey: key, direction: nextDirection })
   }, [sortKey, sortDirection, addEvent])
 
   const handleThemeToggle = useCallback(() => {
@@ -54,6 +55,7 @@ function Dashboard() {
 
   const filteredPlayers = useMemo(() => players.filter((player) => `${player.playerName} ${player.email}`.toLowerCase().includes(query.toLowerCase())).sort((a, b) => { const left = String(a[sortKey]); const right = String(b[sortKey]); return sortDirection === 'asc' ? left.localeCompare(right) : right.localeCompare(left) }), [players, query, sortKey, sortDirection])
   const totalPages = Math.max(1, Math.ceil(filteredPlayers.length / 10))
+  useEffect(() => { if (page > totalPages) setPage(totalPages) }, [page, totalPages])
   const visiblePlayers = filteredPlayers.slice((page - 1) * 10, page * 10)
   const submitCreate = async (values: PlayerFormValues) => { setSaving(true); try { await createPlayer(values); setShowCreate(false); addToast('success', 'Player registered successfully') } catch { addToast('error', 'Could not register player') } finally { setSaving(false) } }
   const submitEdit = async (values: PlayerFormValues) => { if (!editingPlayer) return; setSaving(true); try { await updatePlayer(editingPlayer.id, values); setEditingPlayer(null); addToast('success', 'Player profile updated') } catch { addToast('error', 'Could not update player') } finally { setSaving(false) } }
