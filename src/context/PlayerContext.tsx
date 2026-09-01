@@ -21,10 +21,14 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const { addEvent } = useEventLog()
 
   useEffect(() => {
-    playerService.getPlayers().then(setPlayers).catch(() => setError('Unable to load player data.')).finally(() => {
-      setIsLoading(false)
-      addEvent('page', 'PlayerContext', 'Player roster loaded', { totalPlayers: players.length })
-    })
+    playerService
+      .getPlayers()
+      .then((data) => {
+        setPlayers(data)
+        addEvent('page', 'PlayerContext', 'Player roster loaded', { totalPlayers: data.length })
+      })
+      .catch(() => setError('Unable to load player data.'))
+      .finally(() => setIsLoading(false))
   }, [addEvent])
 
   const value = useMemo<PlayerContextValue>(() => ({

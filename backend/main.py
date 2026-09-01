@@ -9,7 +9,7 @@ Documentation at http://localhost:8000/docs
 
 from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, Field
 from typing import List, Optional
 from datetime import datetime
 from enum import Enum
@@ -288,10 +288,14 @@ async def delete_player(player_id: int):
 @app.exception_handler(ValueError)
 async def value_error_handler(request, exc):
     """Maneja errores de validación"""
-    return {
-        "detail": str(exc),
-        "error": "Validation Error"
-    }
+    from fastapi.responses import JSONResponse
+    return JSONResponse(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        content={
+            "detail": str(exc),
+            "error": "Validation Error"
+        }
+    )
 
 
 # ============================================================================
