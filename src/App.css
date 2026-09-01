@@ -68,4 +68,17 @@
 .guest-info-banner { margin:0 25px 15px; padding:10px 14px; background:rgba(111,200,232,.08); border-left:3px solid var(--blue); border-radius:0 4px 4px 0; display:flex; align-items:center; gap:10px; font-size:12px; color:#cbd5e1; }
 .app.light .guest-info-banner { background:rgba(0,102,204,.06); color:#334155; }
 .app.light .role-switch-btn { background:#f5f3ff; border-color:#c4b5fd; color:#6d28d9; }
+/* ADMIN LOGIN MODAL STYLES */
+.admin-login-modal { width:min(100%,460px); border-top:2px solid #7c3aed; }
+.admin-login-content { padding:28px 26px; }
+.admin-modal-header { display:flex; gap:14px; align-items:flex-start; margin-bottom:6px; }
+.admin-modal-icon { width:46px; height:46px; border-radius:10px; background:rgba(124,58,237,.18); color:#a78bfa; display:grid; place-items:center; flex-shrink:0; }
+.password-input-wrapper { position:relative; display:flex; align-items:center; margin-top:7px; }
+.password-icon { position:absolute; left:12px; color:var(--muted); pointer-events:none; }
+.toggle-password-btn { position:absolute; right:10px; background:transparent; border:0; color:var(--muted); cursor:pointer; display:grid; place-items:center; padding:4px; }
+.toggle-password-btn:hover { color:#fff; }
+.admin-error-notice { margin-top:12px; padding:9px 12px; background:rgba(239,68,68,.12); border-left:3px solid #ef4444; border-radius:0 4px 4px 0; font-size:12px; color:#fca5a5; line-height:1.4; }
+.app.light .admin-modal-icon { background:#ede9fe; color:#7c3aed; }
+.app.light .password-input-wrapper input { background:#fff; border-color:#c7d8db; color:#152838; }
+.app.light .toggle-password-btn:hover { color:#152838; }
 @media(max-width:700px){.topbar-inner{padding:0 18px}.menu-toggle{display:grid}.main-nav{display:none;position:absolute;top:71px;left:0;right:0;background:#171b1e;border-bottom:1px solid var(--line);padding:20px;flex-direction:column;align-items:flex-start;gap:18px}.light .main-nav{background:#f7fcfc}.main-nav.open{display:flex}.profile-chip{padding-top:10px;border-top:1px solid var(--line);width:100%}.main-content{padding:42px 16px 60px}.page-intro{display:block}.system-status{margin-top:25px}.metrics-grid{grid-template-columns:1fr}.metric-card{min-height:145px}.panel-header,.toolbar,.create-strip{padding-left:16px;padding-right:16px}.panel-header{align-items:flex-start;gap:14px}.panel-header .button{padding:10px}.toolbar{display:block}.search-box{width:100%}.result-count{display:block;margin-top:14px}.footer{padding:0 16px 22px;flex-wrap:wrap}.footer-version{margin-left:0;width:100%}.create-strip{display:block}.create-strip .button{margin-top:20px}.toast-stack{left:16px;right:16px;bottom:16px}.toast{min-width:0}.player-form{padding:28px 22px}.hero-stats-bar{gap:14px}.stat-divider{display:none}.story-footer-callout{flex-direction:column;align-items:flex-start}.guest-info-banner{margin:0 16px 15px}}

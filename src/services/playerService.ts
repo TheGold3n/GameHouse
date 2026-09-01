@@ -54,9 +54,13 @@ export const playerService = {
    */
   async updatePlayer(id: number, values: PlayerFormValues): Promise<Player> {
     try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+      const token = localStorage.getItem('gamehouse_admin_token')
+      if (token) headers['x-admin-key'] = token
+
       const response = await fetch(`${API_BASE_URL}/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify(values),
       })
       await handleApiError(response)
@@ -72,8 +76,13 @@ export const playerService = {
    */
   async deletePlayer(id: number): Promise<number> {
     try {
+      const headers: Record<string, string> = {}
+      const token = localStorage.getItem('gamehouse_admin_token')
+      if (token) headers['x-admin-key'] = token
+
       const response = await fetch(`${API_BASE_URL}/${id}`, {
         method: 'DELETE',
+        headers,
       })
       await handleApiError(response)
       return id

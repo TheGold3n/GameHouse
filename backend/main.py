@@ -9,7 +9,7 @@ Documentation at http://localhost:8000/docs
 
 import os
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, HTTPException, status, Depends
+from fastapi import FastAPI, HTTPException, status, Depends, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -272,20 +272,40 @@ async def get_all_players(db: Session = Depends(get_db)):
     return players
 
 
+# ============================================================================
+# SEGURIDAD Y CLAVE DE ADMINISTRADOR
+# ============================================================================
+
+ADMIN_KEY = os.getenv("ADMIN_KEY", "Velvyn.1234")
+
+def require_admin(x_admin_key: Optional[str] = Header(None)):
+    """Verifica que la petición contenga la clave secreta de Administrador"""
+    if x_admin_key != ADMIN_KEY:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Acceso denegado: Se requiere autenticacion de Administrador (velvyn)."
+        )
+    return True
+
+
 @app.post("/api/players", response_model=Player, status_code=status.HTTP_201_CREATED, tags=["Players"])
-async def create_player(player_form: PlayerFormValues, db: Session = Depends(get_db)):
+async def create_player(
+    player_form: PlayerFormValues, 
+    db: Session = Depends(get_db),
+    x_admin_key: Optional[str] = Header(None)
+):
     """
     Crea un nuevo jugador.
     
     Args:
-        player_form (PlayerFormValues): Datos del nuevo jugador
+        player_form (PlayerFormValues): Datos del jugador a crear
         db: Sesión de base de datos
     
     Returns:
         Player: El jugador creado con id y registeredAt
     
     Raises:
-        HTTPException: Si el email ya existe
+        HTTPException: Si el email ya está registrado
     """
     # Verificar si el email ya existe
     existing = db.query(PlayerModel).filter(PlayerModel.email == player_form.email).first()
@@ -295,13 +315,18 @@ async def create_player(player_form: PlayerFormValues, db: Session = Depends(get
             detail=f"Email {player_form.email} already registered"
         )
     
+    # Si un usuario común intenta registrarse como admin, forzar rol player
+    assigned_role = player_form.role or "player"
+    if assigned_role == "admin" and x_admin_key != ADMIN_KEY:
+        assigned_role = "player"
+
     # Crear nuevo jugador
     db_player = PlayerModel(
         playerName=player_form.playerName,
         phone=player_form.phone,
         email=player_form.email,
         status=player_form.status,
-        role=player_form.role or "player"
+        role=assigned_role
     )
     
     db.add(db_player)
@@ -312,7 +337,12 @@ async def create_player(player_form: PlayerFormValues, db: Session = Depends(get
 
 
 @app.put("/api/players/{player_id}", response_model=Player, tags=["Players"])
-async def update_player(player_id: int, player_form: PlayerFormValues, db: Session = Depends(get_db)):
+async def update_player(
+    player_id: int, 
+    player_form: PlayerFormValues, 
+    db: Session = Depends(get_db),
+    is_admin: bool = Depends(require_admin)
+):
     """
     Actualiza un jugador existente.
     
@@ -359,7 +389,11 @@ async def update_player(player_id: int, player_form: PlayerFormValues, db: Sessi
 
 
 @app.delete("/api/players/{player_id}", tags=["Players"])
-async def delete_player(player_id: int, db: Session = Depends(get_db)):
+async def delete_player(
+    player_id: int, 
+    db: Session = Depends(get_db), 
+    is_admin: bool = Depends(require_admin)
+):
     """
     Elimina un jugador.
     
