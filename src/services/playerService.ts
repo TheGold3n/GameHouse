@@ -1,11 +1,11 @@
-﻿import type { Player, PlayerFormValues } from '../types'
+import type { Player, PlayerFormValues } from '../types'
 
 /**
  * Real API Backend Service
  * Conecta con FastAPI en http://localhost:8000/api/players
  */
 
-const API_BASE_URL = 'http://localhost:8000/api/players'
+const API_BASE_URL = '/api/players'
 
 // Función auxiliar para manejo de errores
 const handleApiError = async (response: Response) => {
