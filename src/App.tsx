@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, useCallback } from 'react'
-import { Activity, ChevronLeft, ChevronRight, Plus, Search, ShieldCheck, Users, X } from 'lucide-react'
+import { Activity, ChevronLeft, ChevronRight, Plus, Search, ShieldCheck, Users, X, Info } from 'lucide-react'
 import { Footer } from './components/Footer'
 import { Navbar } from './components/Navbar'
 import { PlayerForm } from './components/PlayerForm'
@@ -7,6 +7,7 @@ import { PlayerModal } from './components/PlayerModal'
 import { PlayerTable } from './components/PlayerTable'
 import { Toast } from './components/Toast'
 import { RealTimeFlow } from './components/RealTimeFlow'
+import { WelcomeLanding } from './components/WelcomeLanding'
 import { PlayerProvider, usePlayers } from './context/PlayerContext'
 import { EventLogProvider, useEventLog } from './context/EventLogContext'
 import type { Player, PlayerFormValues, ToastMessage } from './types'
@@ -25,6 +26,18 @@ function Dashboard() {
   const [saving, setSaving] = useState(false)
   const [toasts, setToasts] = useState<ToastMessage[]>([])
   const [isDark, setIsDark] = useState(true)
+  const [userRole, setUserRole] = useState<'guest' | 'admin'>(() => {
+    return (localStorage.getItem('gamehouse_user_role') as 'guest' | 'admin') || 'guest'
+  })
+
+  const handleToggleRole = useCallback(() => {
+    setUserRole((current) => {
+      const next = current === 'admin' ? 'guest' : 'admin'
+      localStorage.setItem('gamehouse_user_role', next)
+      addToast('info', next === 'admin' ? '👑 Modo Administrador activado (velvyn)' : '👤 Cambiado a Modo Visitante')
+      return next
+    })
+  }, [])
 
   const addToast = (type: ToastMessage['type'], message: string) => {
     const id = Date.now()
@@ -63,11 +76,25 @@ function Dashboard() {
   const activeCount = players.filter((player) => player.status === 'active').length
   return (
     <div className={isDark ? 'app dark' : 'app light'} id="top">
-      <Navbar isDark={isDark} onToggleTheme={handleThemeToggle} currentPage={currentPage} onPageChange={setCurrentPage} />
+      <Navbar
+        isDark={isDark}
+        onToggleTheme={handleThemeToggle}
+        currentPage={currentPage}
+        onPageChange={setCurrentPage}
+        userRole={userRole}
+        onToggleRole={handleToggleRole}
+      />
       <main className="main-content">
         {currentPage === 'dashboard' ? (
-          <div id="players">
-            <section className="page-intro">
+          <>
+            <WelcomeLanding
+              onAddPlayer={() => setShowCreate(true)}
+              totalPlayers={players.length}
+              activePlayers={activeCount}
+              userRole={userRole}
+            />
+            <div id="roster">
+              <section className="page-intro">
               <div>
                 <span className="eyebrow">CONTROL CENTER <b>•</b> PLAYERS</span>
                 <h1>Player <em>operations</em></h1>
@@ -109,9 +136,15 @@ function Dashboard() {
                   <h2>All players <span>{filteredPlayers.length}</span></h2>
                 </div>
                 <button className="button button-primary" onClick={() => setShowCreate(true)}>
-                  <Plus size={17} /> Add player
+                  <Plus size={17} /> {userRole === 'admin' ? 'Add player' : 'Registrarme'}
                 </button>
               </div>
+              {userRole === 'guest' && (
+                <div className="guest-info-banner">
+                  <Info size={14} />
+                  <span>Estás explorando en <strong>Modo Visitante</strong>: Tienes acceso de lectura al roster. Para sumarte a la lista, haz clic en <strong>"+ Registrarme"</strong>.</span>
+                </div>
+              )}
               <div className="toolbar">
                 <div className="search-box">
                   <Search size={17} />
@@ -120,7 +153,7 @@ function Dashboard() {
                 </div>
                 <span className="result-count">{isLoading ? 'Syncing roster...' : `Showing ${visiblePlayers.length} of ${filteredPlayers.length}`}</span>
               </div>
-              {error ? <div className="empty-state">{error}</div> : isLoading ? <div className="loading-state"><span className="spinner" />Loading player roster...</div> : visiblePlayers.length ? <PlayerTable players={visiblePlayers} sortKey={sortKey} sortDirection={sortDirection} onSort={handleSort} onEdit={setEditingPlayer} onDelete={confirmDelete} /> : <div className="empty-state">No players match your search.</div>}
+              {error ? <div className="empty-state">{error}</div> : isLoading ? <div className="loading-state"><span className="spinner" />Loading player roster...</div> : visiblePlayers.length ? <PlayerTable players={visiblePlayers} sortKey={sortKey} sortDirection={sortDirection} onSort={handleSort} onEdit={setEditingPlayer} onDelete={confirmDelete} isAdmin={userRole === 'admin'} /> : <div className="empty-state">No players match your search.</div>}
               <div className="pagination">
                 <span>Page {page} of {totalPages}</span>
                 <div>
@@ -140,6 +173,7 @@ function Dashboard() {
               </section>
             )}
           </div>
+        </>
         ) : (
           <RealTimeFlow />
         )}

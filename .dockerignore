@@ -1,0 +1,12 @@
+node_modules
+dist
+backend
+.git
+.github
+.gemini
+claude
+gemini
+*.md
+.vscode
+.idea
+

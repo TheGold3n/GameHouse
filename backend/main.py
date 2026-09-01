@@ -2,21 +2,73 @@
 FastAPI Backend para GameHouse Player Management System
 ======================================================
 
-CRUD API with in-memory database for player management.
+CRUD API con base de datos SQLite usando SQLAlchemy.
 Endpoints available at http://localhost:8000/api/players
 Documentation at http://localhost:8000/docs
 """
 
-from fastapi import FastAPI, HTTPException, status
+import os
+from contextlib import asynccontextmanager
+from fastapi import FastAPI, HTTPException, status, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
+from sqlalchemy import create_engine, String, DateTime
+from sqlalchemy.orm import DeclarativeBase, sessionmaker, Session, Mapped, mapped_column
 from typing import List, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
-import json
 
 # ============================================================================
-# TIPOS Y ESQUEMAS
+# CONFIGURACIÓN DE BASE DE DATOS
+# ============================================================================
+
+# URL de conexión a SQLite (configurable vía variable de entorno)
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./players.db")
+
+# Si es SQLite con ruta de archivo, asegurar que el directorio exista
+if DATABASE_URL.startswith("sqlite:///") and not DATABASE_URL.startswith("sqlite:///:memory:"):
+    db_file_path = DATABASE_URL.replace("sqlite:///", "")
+    db_dir = os.path.dirname(db_file_path)
+    if db_dir and not os.path.exists(db_dir):
+        os.makedirs(db_dir, exist_ok=True)
+
+# Crear motor de BD
+engine = create_engine(
+    DATABASE_URL,
+    connect_args={"check_same_thread": False}  # Necesario solo para SQLite
+)
+
+# Crear sesión
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+# Base para modelos SQLAlchemy (estilo SQLAlchemy 2.0)
+class Base(DeclarativeBase):
+    pass
+
+# ============================================================================
+# MODELOS DE BASE DE DATOS (SQLAlchemy)
+# ============================================================================
+
+class PlayerModel(Base):
+    """Modelo de jugador en la base de datos"""
+    __tablename__ = "players"
+
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    playerName: Mapped[str] = mapped_column(String(100), nullable=False)
+    phone: Mapped[str] = mapped_column(String(20), nullable=False)
+    email: Mapped[str] = mapped_column(String(255), nullable=False, unique=True, index=True)
+    status: Mapped[str] = mapped_column(String(20), default="active")
+    role: Mapped[str] = mapped_column(String(20), default="player")
+    registeredAt: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc)
+    )
+
+
+# Crear todas las tablas (si no existen)
+Base.metadata.create_all(bind=engine)
+
+# ============================================================================
+# ESQUEMAS PYDANTIC (Para API)
 # ============================================================================
 
 class StatusEnum(str, Enum):
@@ -31,6 +83,7 @@ class PlayerBase(BaseModel):
     phone: str = Field(..., min_length=5, max_length=20)
     email: str = Field(..., pattern=r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
     status: StatusEnum = Field(default=StatusEnum.active)
+    role: Optional[str] = Field(default="player")
 
 
 class PlayerFormValues(PlayerBase):
@@ -41,48 +94,40 @@ class PlayerFormValues(PlayerBase):
 class Player(PlayerBase):
     """Modelo completo de un jugador (con id y timestamp)"""
     id: int
-    registeredAt: str  # ISO format
-
-
-# ============================================================================
-# INICIALIZACIÓN DE FASTAPI
-# ============================================================================
-
-app = FastAPI(
-    title="GameHouse Player Management API",
-    description="CRUD API para gestionar jugadores",
-    version="1.0.0"
-)
-
-# ============================================================================
-# CONFIGURACIÓN CORS
-# ============================================================================
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=False,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# ============================================================================
-# BASE DE DATOS EN MEMORIA (Simulada)
-# ============================================================================
-
-class PlayerDatabase:
-    """
-    Simulación de base de datos en memoria.
-    En producción, usar PostgreSQL, MongoDB, etc.
-    """
+    registeredAt: datetime
     
-    def __init__(self):
-        self.players: List[Player] = []
-        self.next_id = 1
-        self._initialize_mock_data()
-    
-    def _initialize_mock_data(self):
-        """Inicializa con 30 jugadores mock"""
+    class Config:
+        from_attributes = True  # Para convertir objetos SQLAlchemy a Pydantic
+
+
+# ============================================================================
+# DEPENDENCIAS
+# ============================================================================
+
+def get_db():
+    """Dependencia para obtener la sesión de BD en cada request"""
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+
+# ============================================================================
+# FUNCIÓN DE INICIALIZACIÓN DE DATOS
+# ============================================================================
+
+def init_mock_data():
+    """Inicializa con datos mock si la tabla está vacía"""
+    db = SessionLocal()
+    try:
+        # Si ya hay jugadores, no hacer nada
+        if db.query(PlayerModel).count() > 0:
+            print("✓ Base de datos ya contiene jugadores")
+            return
+        
+        print("📝 Inicializando datos mock...")
+        
         mock_data = [
             ("ShadowNinja_42", "+1-234-567-8901", "shadowninja_42@tempgaming.local", "active"),
             ("PhantomGamer", "+1-345-678-9012", "phantomgamer@tempgaming.local", "active"),
@@ -116,63 +161,64 @@ class PlayerDatabase:
             ("EnigmaFox", "+1-123-456-7892", "enigmafox@tempgaming.local", "inactive"),
         ]
         
-        for playerName, phone, email, status in mock_data:
-            self.players.append(Player(
-                id=self.next_id,
+        for playerName, phone, email, status_val in mock_data:
+            player = PlayerModel(
                 playerName=playerName,
                 phone=phone,
                 email=email,
-                status=status,
-                registeredAt=datetime.utcnow().isoformat() + "Z"
-            ))
-            self.next_id += 1
-    
-    def get_all(self) -> List[Player]:
-        """Obtiene todos los jugadores"""
-        return self.players
-    
-    def get_by_id(self, player_id: int) -> Optional[Player]:
-        """Obtiene un jugador por ID"""
-        return next((p for p in self.players if p.id == player_id), None)
-    
-    def create(self, form_values: PlayerFormValues) -> Player:
-        """Crea un nuevo jugador"""
-        player = Player(
-            id=self.next_id,
-            playerName=form_values.playerName,
-            phone=form_values.phone,
-            email=form_values.email,
-            status=form_values.status,
-            registeredAt=datetime.utcnow().isoformat() + "Z"
-        )
-        self.players.append(player)
-        self.next_id += 1
-        return player
-    
-    def update(self, player_id: int, form_values: PlayerFormValues) -> Optional[Player]:
-        """Actualiza un jugador existente"""
-        player = self.get_by_id(player_id)
-        if not player:
-            return None
+                status=status_val
+            )
+            db.add(player)
         
-        player.playerName = form_values.playerName
-        player.phone = form_values.phone
-        player.email = form_values.email
-        player.status = form_values.status
-        return player
+        db.commit()
+        print(f"✓ {len(mock_data)} jugadores agregados a la BD")
     
-    def delete(self, player_id: int) -> bool:
-        """Elimina un jugador"""
-        player = self.get_by_id(player_id)
-        if not player:
-            return False
-        
-        self.players.remove(player)
-        return True
+    except Exception as e:
+        print(f"✗ Error al inicializar datos: {e}")
+        db.rollback()
+    finally:
+        db.close()
 
 
-# Instancia global de base de datos
-db = PlayerDatabase()
+# ============================================================================
+# ============================================================================
+# LIFESPAN (Inicializar BD al iniciar y limpieza al cerrar)
+# ============================================================================
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Ciclo de vida de la aplicación: se ejecuta al iniciar y al detener"""
+    print("\n" + "="*60)
+    print("🚀 Iniciando GameHouse Player Management API")
+    print("="*60)
+    print(f"📦 Base de datos: {DATABASE_URL}")
+    init_mock_data()
+    print("✓ API lista en http://localhost:8000")
+    print("📚 Documentación: http://localhost:8000/docs\n")
+    yield
+
+# ============================================================================
+# INICIALIZACIÓN DE FASTAPI
+# ============================================================================
+
+app = FastAPI(
+    title="GameHouse Player Management API",
+    description="CRUD API para gestionar jugadores con SQLite",
+    version="1.0.0",
+    lifespan=lifespan
+)
+
+# ============================================================================
+# CONFIGURACIÓN CORS
+# ============================================================================
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # ============================================================================
 # RUTAS (ENDPOINTS)
@@ -184,6 +230,7 @@ async def root():
     return {
         "message": "GameHouse Player Management API",
         "version": "1.0.0",
+        "database": "SQLite",
         "docs": "http://localhost:8000/docs",
         "endpoints": {
             "get_all_players": "GET /api/players",
@@ -196,12 +243,14 @@ async def root():
 
 
 @app.get("/health", tags=["Health"])
-async def health_check():
+async def health_check(db: Session = Depends(get_db)):
     """Verificación de salud del servidor"""
+    total_players = db.query(PlayerModel).count()
     return {
         "status": "healthy",
-        "timestamp": datetime.utcnow().isoformat() + "Z",
-        "total_players": len(db.players)
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "database": "SQLite",
+        "total_players": total_players
     }
 
 
@@ -210,61 +259,111 @@ async def health_check():
 # ============================================================================
 
 @app.get("/api/players", response_model=List[Player], tags=["Players"])
-async def get_all_players():
+async def get_all_players(db: Session = Depends(get_db)):
     """
     Obtiene la lista de todos los jugadores.
     
     Returns:
         List[Player]: Lista de jugadores
     """
-    return db.get_all()
+    players = db.query(PlayerModel).all()
+    return players
 
 
 @app.post("/api/players", response_model=Player, status_code=status.HTTP_201_CREATED, tags=["Players"])
-async def create_player(player_form: PlayerFormValues):
+async def create_player(player_form: PlayerFormValues, db: Session = Depends(get_db)):
     """
     Crea un nuevo jugador.
     
     Args:
         player_form (PlayerFormValues): Datos del nuevo jugador
+        db: Sesión de base de datos
     
     Returns:
         Player: El jugador creado con id y registeredAt
+    
+    Raises:
+        HTTPException: Si el email ya existe
     """
-    return db.create(player_form)
+    # Verificar si el email ya existe
+    existing = db.query(PlayerModel).filter(PlayerModel.email == player_form.email).first()
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Email {player_form.email} already registered"
+        )
+    
+    # Crear nuevo jugador
+    db_player = PlayerModel(
+        playerName=player_form.playerName,
+        phone=player_form.phone,
+        email=player_form.email,
+        status=player_form.status,
+        role=player_form.role or "player"
+    )
+    
+    db.add(db_player)
+    db.commit()
+    db.refresh(db_player)
+    
+    return db_player
 
 
 @app.put("/api/players/{player_id}", response_model=Player, tags=["Players"])
-async def update_player(player_id: int, player_form: PlayerFormValues):
+async def update_player(player_id: int, player_form: PlayerFormValues, db: Session = Depends(get_db)):
     """
     Actualiza un jugador existente.
     
     Args:
         player_id (int): ID del jugador
         player_form (PlayerFormValues): Nuevos datos
+        db: Sesión de base de datos
     
     Returns:
         Player: El jugador actualizado
     
     Raises:
-        HTTPException: Si el jugador no existe
+        HTTPException: Si el jugador no existe o el email ya está en uso
     """
-    player = db.update(player_id, player_form)
-    if not player:
+    db_player = db.query(PlayerModel).filter(PlayerModel.id == player_id).first()
+    
+    if not db_player:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Player with id {player_id} not found"
         )
-    return player
+    
+    # Verificar email si cambió
+    if player_form.email != db_player.email:
+        existing = db.query(PlayerModel).filter(PlayerModel.email == player_form.email).first()
+        if existing:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Email {player_form.email} already in use"
+            )
+    
+    # Actualizar campos
+    db_player.playerName = player_form.playerName
+    db_player.phone = player_form.phone
+    db_player.email = player_form.email
+    db_player.status = player_form.status
+    if player_form.role:
+        db_player.role = player_form.role
+    
+    db.commit()
+    db.refresh(db_player)
+    
+    return db_player
 
 
 @app.delete("/api/players/{player_id}", tags=["Players"])
-async def delete_player(player_id: int):
+async def delete_player(player_id: int, db: Session = Depends(get_db)):
     """
     Elimina un jugador.
     
     Args:
         player_id (int): ID del jugador a eliminar
+        db: Sesión de base de datos
     
     Returns:
         dict: { "success": true }
@@ -272,12 +371,17 @@ async def delete_player(player_id: int):
     Raises:
         HTTPException: Si el jugador no existe
     """
-    success = db.delete(player_id)
-    if not success:
+    db_player = db.query(PlayerModel).filter(PlayerModel.id == player_id).first()
+    
+    if not db_player:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Player with id {player_id} not found"
         )
+    
+    db.delete(db_player)
+    db.commit()
+    
     return {"success": True}
 
 
