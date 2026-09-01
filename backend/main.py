@@ -11,6 +11,8 @@ import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, status, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 from sqlalchemy import create_engine, String, DateTime
 from sqlalchemy.orm import DeclarativeBase, sessionmaker, Session, Mapped, mapped_column
@@ -224,14 +226,14 @@ app.add_middleware(
 # RUTAS (ENDPOINTS)
 # ============================================================================
 
-@app.get("/", tags=["Info"])
-async def root():
-    """Endpoint raíz con información de la API"""
+@app.get("/api/info", tags=["Info"])
+async def api_info():
+    """Endpoint con información de la API"""
     return {
         "message": "GameHouse Player Management API",
         "version": "1.0.0",
         "database": "SQLite",
-        "docs": "http://localhost:8000/docs",
+        "docs": "/docs",
         "endpoints": {
             "get_all_players": "GET /api/players",
             "create_player": "POST /api/players",
@@ -383,6 +385,48 @@ async def delete_player(player_id: int, db: Session = Depends(get_db)):
     db.commit()
     
     return {"success": True}
+
+
+# ============================================================================
+# SERVIR FRONTEND SPA (Si existe dist/ para Render o Producción)
+# ============================================================================
+
+DIST_DIR = os.path.join(os.path.dirname(__file__), "dist") if os.path.exists(os.path.join(os.path.dirname(__file__), "dist")) else os.path.join(os.getcwd(), "dist")
+
+if os.path.exists(DIST_DIR):
+    assets_dir = os.path.join(DIST_DIR, "assets")
+    if os.path.exists(assets_dir):
+        app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
+
+    @app.get("/{full_path:path}", tags=["Frontend"])
+    async def serve_spa(full_path: str = ""):
+        # Excluir rutas de API o documentación para que no sean interceptadas
+        if full_path.startswith("api") or full_path.startswith("docs") or full_path.startswith("redoc") or full_path == "health" or full_path == "openapi.json":
+            raise HTTPException(status_code=404, detail="Not found")
+        file_path = os.path.join(DIST_DIR, full_path)
+        if full_path and os.path.exists(file_path) and os.path.isfile(file_path):
+            return FileResponse(file_path)
+        return FileResponse(os.path.join(DIST_DIR, "index.html"))
+
+@app.get("/", tags=["Root"])
+async def root():
+    """Endpoint raíz: sirve la aplicación web si existe dist, o info de la API"""
+    index_file = os.path.join(DIST_DIR, "index.html")
+    if os.path.exists(index_file):
+        return FileResponse(index_file)
+    return {
+        "message": "GameHouse Player Management API",
+        "version": "1.0.0",
+        "database": "SQLite",
+        "docs": "/docs",
+        "endpoints": {
+            "get_all_players": "GET /api/players",
+            "create_player": "POST /api/players",
+            "update_player": "PUT /api/players/{id}",
+            "delete_player": "DELETE /api/players/{id}",
+            "health_check": "GET /health"
+        }
+    }
 
 
 # ============================================================================
