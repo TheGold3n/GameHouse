@@ -166,7 +166,10 @@ El sistema cuenta con un control de acceso interactivo en el cliente:
   * **Auto-registro**: Botón destacado **`+ Registrarme`** para sumarse al roster de jugadores.
 
 #### B) Modo Administrador (`velvyn`)
-* **Activación**: Mediante el botón de intercambio **`[ 🛡️ Acceso Admin ]`** en la barra de navegación superior.
+* **Autenticación requerida**: Al hacer clic en **`[ 🛡️ Acceso Admin ]`**, se despliega el modal de seguridad solicitando la contraseña maestra de administrador (`Velvyn.1234`).
+* **Protección contra intrusos**: Si un usuario externo no ingresa la clave correcta, el acceso es denegado de inmediato y permanece como Visitante.
+* **Cierre de sesión seguro**: Botón **`[ 🚪 Cerrar Sesión ]`** en la barra superior para volver al modo Visitante en cualquier momento.
+* **Seguridad a nivel de Backend**: Los endpoints de edición (`PUT`) y eliminación (`DELETE`) exigen la cabecera `x-admin-key`. Cualquier intento no autorizado (incluso vía Postman o cURL) es rechazado automáticamente con **`403 Forbidden`**.
 * **Permisos completos**:
   * Acceso total a edición de cualquier jugador (nombre, teléfono, correo, estado activo/inactivo).
   * Eliminación permanente de registros con diálogo de confirmación.
