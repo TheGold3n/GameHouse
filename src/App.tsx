@@ -29,11 +29,20 @@ function Dashboard() {
   const [toasts, setToasts] = useState<ToastMessage[]>([])
   const [isDark, setIsDark] = useState(true)
   const [userRole, setUserRole] = useState<'guest' | 'admin'>(() => {
+    return (localStorage.getItem('gamehouse_user_role') as 'guest' | 'admin') || 'guest'
     const savedRole = localStorage.getItem('gamehouse_user_role')
     const savedToken = localStorage.getItem('gamehouse_admin_token')
     return (savedRole === 'admin' && savedToken === 'Velvyn.1234') ? 'admin' : 'guest'
   })
 
+  const handleToggleRole = useCallback(() => {
+    setUserRole((current) => {
+      const next = current === 'admin' ? 'guest' : 'admin'
+      localStorage.setItem('gamehouse_user_role', next)
+      addToast('info', next === 'admin' ? '👑 Modo Administrador activado (velvyn)' : '👤 Cambiado a Modo Visitante')
+      return next
+    })
+  }, [])
   const handleAdminLoginSuccess = () => {
     setUserRole('admin')
     localStorage.setItem('gamehouse_user_role', 'admin')
@@ -91,6 +100,7 @@ function Dashboard() {
         currentPage={currentPage}
         onPageChange={setCurrentPage}
         userRole={userRole}
+        onToggleRole={handleToggleRole}
         onOpenLogin={() => setShowAdminLogin(true)}
         onLogout={handleAdminLogout}
       />

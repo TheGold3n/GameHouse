@@ -60,6 +60,7 @@ export const playerService = {
 
       const response = await fetch(`${API_BASE_URL}/${id}`, {
         method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
         headers,
         body: JSON.stringify(values),
       })

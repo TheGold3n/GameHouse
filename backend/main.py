@@ -9,6 +9,7 @@ Documentation at http://localhost:8000/docs
 
 import os
 from contextlib import asynccontextmanager
+from fastapi import FastAPI, HTTPException, status, Depends
 from fastapi import FastAPI, HTTPException, status, Depends, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -289,6 +290,7 @@ def require_admin(x_admin_key: Optional[str] = Header(None)):
 
 
 @app.post("/api/players", response_model=Player, status_code=status.HTTP_201_CREATED, tags=["Players"])
+async def create_player(player_form: PlayerFormValues, db: Session = Depends(get_db)):
 async def create_player(
     player_form: PlayerFormValues, 
     db: Session = Depends(get_db),
@@ -298,6 +300,7 @@ async def create_player(
     Crea un nuevo jugador.
     
     Args:
+        player_form (PlayerFormValues): Datos del nuevo jugador
         player_form (PlayerFormValues): Datos del jugador a crear
         db: Sesión de base de datos
     
@@ -305,6 +308,7 @@ async def create_player(
         Player: El jugador creado con id y registeredAt
     
     Raises:
+        HTTPException: Si el email ya existe
         HTTPException: Si el email ya está registrado
     """
     # Verificar si el email ya existe
@@ -326,6 +330,7 @@ async def create_player(
         phone=player_form.phone,
         email=player_form.email,
         status=player_form.status,
+        role=player_form.role or "player"
         role=assigned_role
     )
     
@@ -337,6 +342,7 @@ async def create_player(
 
 
 @app.put("/api/players/{player_id}", response_model=Player, tags=["Players"])
+async def update_player(player_id: int, player_form: PlayerFormValues, db: Session = Depends(get_db)):
 async def update_player(
     player_id: int, 
     player_form: PlayerFormValues, 
@@ -389,6 +395,7 @@ async def update_player(
 
 
 @app.delete("/api/players/{player_id}", tags=["Players"])
+async def delete_player(player_id: int, db: Session = Depends(get_db)):
 async def delete_player(
     player_id: int, 
     db: Session = Depends(get_db), 

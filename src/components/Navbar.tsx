@@ -1,3 +1,4 @@
+import { Gamepad2, LayoutDashboard, Menu, Moon, Sun, Activity, X, ShieldCheck, User } from 'lucide-react'
 import { Gamepad2, LayoutDashboard, Menu, Moon, Sun, Activity, X, ShieldCheck, LogOut } from 'lucide-react'
 import { useState } from 'react'
 
@@ -7,10 +8,12 @@ interface NavbarProps {
   currentPage: 'dashboard' | 'flow'
   onPageChange: (page: 'dashboard' | 'flow') => void
   userRole: 'guest' | 'admin'
+  onToggleRole: () => void
   onOpenLogin: () => void
   onLogout: () => void
 }
 
+export function Navbar({ isDark, onToggleTheme, currentPage, onPageChange, userRole, onToggleRole }: NavbarProps) {
 export function Navbar({ isDark, onToggleTheme, currentPage, onPageChange, userRole, onOpenLogin, onLogout }: NavbarProps) {
   const [menuOpen, setMenuOpen] = useState(false)
   return (
@@ -39,6 +42,17 @@ export function Navbar({ isDark, onToggleTheme, currentPage, onPageChange, userR
               </div>
             )}
 
+            <button
+              className="role-switch-btn"
+              onClick={onToggleRole}
+              title={userRole === 'admin' ? 'Cambiar a modo Visitante' : 'Cambiar a modo Administrador (velvyn)'}
+            >
+              {userRole === 'admin' ? (
+                <><User size={13} /> <span>Ver como Visitante</span></>
+              ) : (
+                <><ShieldCheck size={13} /> <span>Acceso Admin</span></>
+              )}
+            </button>
             {userRole === 'admin' ? (
               <button
                 className="role-switch-btn"
