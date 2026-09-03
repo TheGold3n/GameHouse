@@ -8,6 +8,7 @@ export interface Player {
   registeredAt: string
   status: PlayerStatus
   role?: string
+  game?: string
 }
 
 export interface PlayerFormValues {
@@ -16,6 +17,7 @@ export interface PlayerFormValues {
   email: string
   status: PlayerStatus
   role?: string
+  game?: string
 }
 
 export interface ToastMessage {

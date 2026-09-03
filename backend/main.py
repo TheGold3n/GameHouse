@@ -74,6 +74,7 @@ class PlayerModel(Base):
     email: Mapped[str] = mapped_column(String(255), nullable=False, unique=True, index=True)
     status: Mapped[str] = mapped_column(String(20), default="active")
     role: Mapped[str] = mapped_column(String(20), default="player")
+    game: Mapped[Optional[str]] = mapped_column(String(100), default="Minecraft", nullable=True)
     registeredAt: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
@@ -102,6 +103,7 @@ class PlayerBase(BaseModel):
     email: str = Field(..., pattern=r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
     status: StatusEnum = Field(default=StatusEnum.active)
     role: Optional[str] = Field(default="player")
+    game: Optional[str] = Field(default="Minecraft")
 
 
 class PlayerFormValues(PlayerBase):
@@ -132,77 +134,109 @@ def get_db():
 
 
 # ============================================================================
-# FUNCIÓN DE INICIALIZACIÓN DE DATOS
+# FUNCIÓN DE INICIALIZACIÓN Y MIGRACIÓN DE ESQUEMA
 # ============================================================================
 
+def ensure_schema():
+    """Asegura que las columnas requeridas (como game y role) existan en la tabla"""
+    try:
+        from sqlalchemy import inspect, text
+        inspector = inspect(engine)
+        tables = inspector.get_table_names()
+        if "players" in tables:
+            columns = [col["name"] for col in inspector.get_columns("players")]
+            with engine.connect() as conn:
+                if "game" not in columns:
+                    conn.execute(text("ALTER TABLE players ADD COLUMN game VARCHAR(100) DEFAULT 'Minecraft'"))
+                    conn.commit()
+                    print("✓ Columna 'game' verificada/añadida a la tabla 'players'")
+                if "role" not in columns:
+                    conn.execute(text("ALTER TABLE players ADD COLUMN role VARCHAR(20) DEFAULT 'player'"))
+                    conn.commit()
+                    print("✓ Columna 'role' verificada/añadida a la tabla 'players'")
+    except Exception as e:
+        print(f"⚠️ Nota de verificación de esquema: {e}")
+
+
 def init_mock_data():
-    """Inicializa con datos mock si la tabla está vacía"""
+    """Inicializa con datos de jugadores realistas con sus juegos actuales"""
     db = SessionLocal()
     try:
-        # Si ya hay jugadores, no hacer nada
-        if db.query(PlayerModel).count() > 0:
-            print("✓ Base de datos ya contiene jugadores")
+        # Detectar si hay datos viejos temporales (@tempgaming.local) para actualizarlos
+        old_data = db.query(PlayerModel).filter(PlayerModel.email.like("%@tempgaming.local%")).first()
+        if old_data:
+            print("🔄 Migrando datos antiguos a la nueva lista de jugadores realistas con juegos...")
+            db.query(PlayerModel).delete()
+            db.commit()
+        elif db.query(PlayerModel).count() >= 40:
+            print("✓ Base de datos ya contiene jugadores actualizados")
             return
         
-        print("📝 Inicializando datos mock...")
+        print("📝 Inicializando comunidad de jugadores activa...")
         
-        mock_data = [
-            ("ShadowNinja_42", "+1-234-567-8901", "shadowninja_42@tempgaming.local", "active"),
-            ("PhantomGamer", "+1-345-678-9012", "phantomgamer@tempgaming.local", "active"),
-            ("VortexKing88", "+1-456-789-0123", "vortexking88@tempgaming.local", "inactive"),
-            ("NeonStrike", "+1-567-890-1234", "neonstrike@tempgaming.local", "active"),
-            ("IceBlast99", "+1-678-901-2345", "iceblast99@tempgaming.local", "active"),
-            ("ThunderLord", "+1-789-012-3456", "thunderlord@tempgaming.local", "inactive"),
-            ("FirePhoenix", "+1-890-123-4567", "firephoenix@tempgaming.local", "active"),
-            ("CyberWolf_1", "+1-901-234-5678", "cyberwolf_1@tempgaming.local", "active"),
-            ("SilentAssassin", "+1-012-345-6789", "silentassassin@tempgaming.local", "inactive"),
-            ("VoidWalker", "+1-123-456-7890", "voidwalker@tempgaming.local", "active"),
-            ("SolarFlare99", "+1-234-567-8902", "solarflare99@tempgaming.local", "active"),
-            ("LunaWhisper", "+1-345-678-9013", "lunawhisper@tempgaming.local", "inactive"),
-            ("StormBringer", "+1-456-789-0124", "stormbringer@tempgaming.local", "active"),
-            ("EchoKnight", "+1-567-890-1235", "echoknight@tempgaming.local", "active"),
-            ("SaberEdge77", "+1-678-901-2346", "saberedge77@tempgaming.local", "inactive"),
-            ("NovaBlast", "+1-789-012-3457", "novablast@tempgaming.local", "active"),
-            ("PrimeHunter", "+1-890-123-4568", "primehunter@tempgaming.local", "active"),
-            ("VenomStrike", "+1-901-234-5679", "venomstrike@tempgaming.local", "inactive"),
-            ("TitanForce", "+1-012-345-6790", "titanforce@tempgaming.local", "active"),
-            ("OmegaRider", "+1-123-456-7891", "omegarider@tempgaming.local", "active"),
-            ("IronFist_5", "+1-234-567-8903", "ironfist_5@tempgaming.local", "inactive"),
-            ("CrimsonBlade", "+1-345-678-9014", "crimsonblade@tempgaming.local", "active"),
-            ("SoulSeeker", "+1-456-789-0125", "soulseeker@tempgaming.local", "active"),
-            ("NightCrawler", "+1-567-890-1236", "nightcrawler@tempgaming.local", "inactive"),
-            ("PixelMaster", "+1-678-901-2347", "pixelmaster@tempgaming.local", "active"),
-            ("RogueWolf", "+1-789-012-3458", "roguewolf@tempgaming.local", "active"),
-            ("LumiNova", "+1-890-123-4569", "luminova@tempgaming.local", "inactive"),
-            ("SpeedDemon", "+1-901-234-5680", "speeddemon@tempgaming.local", "active"),
-            ("QuantumLeap", "+1-012-345-6791", "quantumleap@tempgaming.local", "active"),
-            ("EnigmaFox", "+1-123-456-7892", "enigmafox@tempgaming.local", "inactive"),
+        # Lista realista de jugadores: (nombre, teléfono, email, estado, juego, rol)
+        realistic_players = [
+            ("velvyn", "+1-555-0100", "velvyn@gamehouse.admin", "active", "Minecraft", "admin"),
+            ("Kael_Sniper", "+34 612 345 678", "kael.sniper99@gmail.com", "active", "Counter-Strike 2", "player"),
+            ("Valkyrie_Vex", "+1 415 892 3341", "valk.vex@outlook.com", "active", "Valorant", "player"),
+            ("Draco_Clutch", "+54 9 11 4821 9901", "draco.clutch@gmail.com", "active", "Fortnite", "player"),
+            ("Neko_GamerTV", "+52 55 1298 4432", "neko.live@twitch.tv", "active", "Minecraft", "player"),
+            ("ApexPredator_X", "+1 206 555 0192", "apex.predator.x@proton.me", "active", "Apex Legends", "player"),
+            ("GhostRider_77", "+56 9 8765 4321", "ghost.rider77@gmail.com", "active", "Call of Duty: Warzone", "player"),
+            ("Sombra_FPS", "+57 310 987 6543", "sombra.tactical@gmail.com", "active", "Valorant", "player"),
+            ("ArcticFox_x", "+44 7700 900123", "arcticfox.gaming@icloud.com", "active", "Minecraft", "player"),
+            ("Nova_Striker", "+49 151 23456789", "nova.striker@gmail.com", "active", "Counter-Strike 2", "player"),
+            ("Zenith_CS", "+33 6 12 34 56 78", "zenith.global@proton.me", "active", "Counter-Strike 2", "player"),
+            ("PixelQueen", "+55 11 98765 4321", "pixelqueen.stream@gmail.com", "active", "Minecraft", "player"),
+            ("Vortex_Aim", "+1 312 555 0147", "vortex.aimbot@outlook.com", "active", "Valorant", "player"),
+            ("Blaze_Fury", "+54 9 351 445 6677", "blaze.fury01@gmail.com", "active", "Fortnite", "player"),
+            ("CyberSamurai", "+81 90 1234 5678", "samurai.cyber@gmail.com", "active", "Overwatch 2", "player"),
+            ("Luna_Eclipse", "+1 647 555 0188", "luna.eclipse.mc@proton.me", "active", "Minecraft", "player"),
+            ("ToxicVenom", "+52 81 2345 6789", "toxic.venom@gmail.com", "inactive", "Call of Duty: Warzone", "player"),
+            ("TitanSlayer", "+1 404 555 0173", "titanslayer.gg@gmail.com", "active", "Apex Legends", "player"),
+            ("EchoKnight_9", "+44 7911 123456", "echoknight9@outlook.com", "active", "Rainbow Six Siege", "player"),
+            ("ShadowPulse", "+34 699 887 766", "shadowpulse.val@gmail.com", "active", "Valorant", "player"),
+            ("IronClad_Tank", "+1 713 555 0165", "ironclad.tank@gmail.com", "active", "Overwatch 2", "player"),
+            ("StormChaser_X", "+54 9 11 7766 5544", "stormchaser.x@icloud.com", "active", "Fortnite", "player"),
+            ("Quantum_Dash", "+1 503 555 0122", "quantum.dash@proton.me", "active", "Apex Legends", "player"),
+            ("NightHawk_FPS", "+49 170 9876543", "nighthawk.cs2@gmail.com", "active", "Counter-Strike 2", "player"),
+            ("RedstonePro_", "+1 214 555 0134", "redstone.engineer@gmail.com", "active", "Minecraft", "player"),
+            ("RogueAgent_00", "+33 7 89 01 23 45", "rogue.agent00@gmail.com", "inactive", "Rainbow Six Siege", "player"),
+            ("AstroBoy_99", "+52 33 4455 6677", "astroboy99@gmail.com", "active", "Minecraft", "player"),
+            ("CrimsonReaper", "+1 305 555 0199", "crimson.reaper@outlook.com", "active", "Call of Duty: Warzone", "player"),
+            ("FrostBite_TV", "+44 7890 123456", "frostbite.live@twitch.tv", "active", "Valorant", "player"),
+            ("HyperNova_Z", "+56 9 7654 3210", "hypernova.z@gmail.com", "active", "Fortnite", "player"),
+            ("SilentKill_", "+34 600 112 233", "silentkill.sniper@gmail.com", "inactive", "Counter-Strike 2", "player"),
+            ("NeonRider_88", "+1 619 555 0184", "neonrider88@gmail.com", "active", "Minecraft", "player"),
+            ("ViperStrike_", "+57 300 123 4567", "viperstrike.main@proton.me", "active", "Valorant", "player"),
+            ("GlitchMaster", "+1 202 555 0111", "glitchmaster.gg@gmail.com", "active", "Apex Legends", "player"),
+            ("SoulReaver_99", "+49 160 1122334", "soulreaver99@gmail.com", "active", "Counter-Strike 2", "player"),
+            ("EmeraldCrafter", "+1 416 555 0155", "emerald.crafter@gmail.com", "active", "Minecraft", "player"),
+            ("ZeroPoint_BR", "+55 21 99887 6655", "zeropoint.br@outlook.com", "active", "Fortnite", "player"),
+            ("BulletProof_", "+1 702 555 0177", "bulletproof.cod@gmail.com", "active", "Call of Duty: Warzone", "player"),
+            ("BreachMaster", "+33 6 98 76 54 32", "breach.master@icloud.com", "active", "Rainbow Six Siege", "player"),
+            ("OverDrive_Gen", "+1 617 555 0142", "overdrive.gen@gmail.com", "inactive", "Overwatch 2", "player"),
+            ("DiamondSword_", "+54 9 11 3322 1100", "diamondsword.pvp@gmail.com", "active", "Minecraft", "player"),
+            ("RadiantAce_TV", "+1 949 555 0138", "radiant.ace@twitch.tv", "active", "Valorant", "player"),
+            ("TacticalNuke", "+1 818 555 0166", "tactical.nuke@proton.me", "active", "Call of Duty: Warzone", "player"),
+            ("SkyWalker_MC", "+34 677 889 900", "skywalker.mc@gmail.com", "active", "Minecraft", "player"),
+            ("SubTickGod", "+49 152 3344556", "subtick.god@gmail.com", "active", "Counter-Strike 2", "player"),
         ]
-        
-        # Asegurar creación del administrador velvyn si no existe
-        admin_user = db.query(PlayerModel).filter(PlayerModel.playerName.ilike("velvyn")).first()
-        if not admin_user:
-            admin_user = PlayerModel(
-                playerName="velvyn",
-                phone="+1-555-0100",
-                email="velvyn@gamehouse.admin",
-                status="active",
-                role="admin"
-            )
-            db.add(admin_user)
 
-        for playerName, phone, email, status_val in mock_data:
+        for playerName, phone, email, status_val, game_val, role_val in realistic_players:
             player = PlayerModel(
                 playerName=playerName,
                 phone=phone,
                 email=email,
                 status=status_val,
-                role="player"
+                game=game_val,
+                role=role_val
             )
             db.add(player)
         
         db.commit()
-        print(f"✓ {len(mock_data) + 1} jugadores (incluyendo Admin velvyn) agregados a la BD")
+        active_total = sum(1 for p in realistic_players if p[3] == "active")
+        print(f"✓ {len(realistic_players)} jugadores agregados ({active_total} activos en línea)")
     
     except Exception as e:
         print(f"✗ Error al inicializar datos: {e}")
@@ -224,6 +258,7 @@ async def lifespan(app: FastAPI):
     print(f"📦 Base de datos: {DATABASE_URL}")
     try:
         Base.metadata.create_all(bind=engine)
+        ensure_schema()
         init_mock_data()
     except Exception as e:
         print(f"⚠️ Error en inicialización de base de datos: {e}")
@@ -358,7 +393,8 @@ async def create_player(
         phone=player_form.phone,
         email=player_form.email,
         status=player_form.status,
-        role=assigned_role
+        role=assigned_role,
+        game=player_form.game or "Minecraft"
     )
     
     db.add(db_player)
@@ -411,6 +447,8 @@ async def update_player(
     db_player.phone = player_form.phone
     db_player.email = player_form.email
     db_player.status = player_form.status
+    if player_form.game is not None:
+        db_player.game = player_form.game
     if player_form.role:
         db_player.role = player_form.role
     

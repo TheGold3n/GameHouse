@@ -9,6 +9,7 @@ import { Toast } from './components/Toast'
 import { RealTimeFlow } from './components/RealTimeFlow'
 import { WelcomeLanding } from './components/WelcomeLanding'
 import { TopGames } from './components/TopGames'
+import { ArchitectureStory } from './components/ArchitectureStory'
 import { AdminLoginModal } from './components/AdminLoginModal'
 import { PlayerProvider, usePlayers } from './context/PlayerContext'
 import { EventLogProvider, useEventLog } from './context/EventLogContext'
@@ -82,7 +83,23 @@ function Dashboard() {
     addEvent('theme', 'UI', `Theme changed to ${isDark ? 'light' : 'dark'}`, { theme: isDark ? 'light' : 'dark' })
   }, [isDark, addEvent])
 
-  const filteredPlayers = useMemo(() => players.filter((player) => `${player.playerName} ${player.email}`.toLowerCase().includes(query.toLowerCase())).sort((a, b) => { const left = String(a[sortKey]); const right = String(b[sortKey]); return sortDirection === 'asc' ? left.localeCompare(right) : right.localeCompare(left) }), [players, query, sortKey, sortDirection])
+  const filteredPlayers = useMemo(
+    () =>
+      players
+        .filter((player) =>
+          `${player.playerName} ${player.email} ${player.game || ''}`
+            .toLowerCase()
+            .includes(query.toLowerCase())
+        )
+        .sort((a, b) => {
+          const left = String(a[sortKey] || '')
+          const right = String(b[sortKey] || '')
+          return sortDirection === 'asc'
+            ? left.localeCompare(right)
+            : right.localeCompare(left)
+        }),
+    [players, query, sortKey, sortDirection]
+  )
   const totalPages = Math.max(1, Math.ceil(filteredPlayers.length / 10))
   useEffect(() => { if (page > totalPages) setPage(totalPages) }, [page, totalPages])
   const visiblePlayers = filteredPlayers.slice((page - 1) * 10, page * 10)
@@ -93,6 +110,11 @@ function Dashboard() {
 
   const handleNavigateToPlayers = () => {
     setCurrentPage('players')
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const handleNavigateToArchitecture = () => {
+    setCurrentPage('architecture')
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
@@ -114,12 +136,20 @@ function Dashboard() {
             <WelcomeLanding
               onAddPlayer={() => { setCurrentPage('players'); setShowCreate(true) }}
               onGoToPlayers={handleNavigateToPlayers}
+              onGoToArchitecture={handleNavigateToArchitecture}
               totalPlayers={players.length}
               activePlayers={activeCount}
               userRole={userRole}
             />
             <TopGames onExploreCommunity={handleNavigateToPlayers} />
           </>
+        )}
+
+        {currentPage === 'architecture' && (
+          <ArchitectureStory
+            onBackToHome={() => { setCurrentPage('dashboard'); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
+            onGoToPlayers={handleNavigateToPlayers}
+          />
         )}
 
         {currentPage === 'players' && (

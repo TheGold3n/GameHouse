@@ -1,7 +1,7 @@
-import { Gamepad2, LayoutDashboard, Menu, Moon, Sun, Activity, X, ShieldCheck, User, LogOut, Users, Flame } from 'lucide-react'
+import { Gamepad2, LayoutDashboard, Menu, Moon, Sun, Activity, X, ShieldCheck, User, LogOut, Users, Flame, Layers } from 'lucide-react'
 import { useState } from 'react'
 
-export type AppPage = 'dashboard' | 'players' | 'flow'
+export type AppPage = 'dashboard' | 'players' | 'architecture' | 'flow'
 
 interface NavbarProps {
   isDark: boolean
@@ -71,14 +71,7 @@ export function Navbar({
             className="nav-link" 
             onClick={() => handleNavClick('dashboard', 'top-games')}
           >
-            <Flame size={16} /> Juegos Más Jugados
-          </button>
-
-          <button 
-            className="nav-link" 
-            onClick={() => handleNavClick('dashboard', 'architecture-story')}
-          >
-            Arquitectura
+            <Flame size={16} /> Top Juegos
           </button>
 
           <button 
@@ -89,10 +82,17 @@ export function Navbar({
           </button>
 
           <button 
+            className={`nav-link ${currentPage === 'architecture' ? 'active' : ''}`} 
+            onClick={() => handleNavClick('architecture')}
+          >
+            <Layers size={16} /> Cómo se construyó
+          </button>
+
+          <button 
             className={`nav-link ${currentPage === 'flow' ? 'active' : ''}`} 
             onClick={() => handleNavClick('flow')}
           >
-            <Activity size={16} /> Auditoría en Vivo
+            <Activity size={16} /> Auditoría
           </button>
 
           <button 
