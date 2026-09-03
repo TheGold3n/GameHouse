@@ -1,7 +1,19 @@
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap');
 :root { --orange:#ff8c42; --gold:#ffd000; --blue:#6fc8e8; --navy:#001f3f; --ink:#111417; --muted:#89909a; --line:#2b3036; }
 * { box-sizing:border-box; } body { margin:0; min-width:320px; font-family:'Space Grotesk',sans-serif; background:#111417; color:#f6f5f1; } button,input,select { font:inherit; } button { cursor:pointer; }
-.app { min-height:100vh; background:radial-gradient(circle at 75% 12%, rgba(0,102,204,.12), transparent 28rem), #111417; transition:background .3s,color .3s; } .app.light { background:linear-gradient(125deg,#eef9fb 0%,#f8fbfb 50%,#eaf5f6 100%); color:#152838; --line:#c7d8db; --muted:#567078; } .app.light .topbar,.app.light .workspace-panel,.app.light .metric-card { background:rgba(255,255,255,.74); } .app.light .topbar { border-color:#c7d8db; } .app.light .nav-link { color:#567078; } .app.light .nav-link.active { color:#152838; } .app.light .create-strip { background:#d9f0f3; border-color:#9bcbd2; }
+.app { min-height:100vh; background:radial-gradient(circle at 75% 12%, rgba(0,102,204,.12), transparent 28rem), #111417; transition:background .3s,color .3s; }
+.app.light {
+  background:
+    radial-gradient(circle at 10% 8%, rgba(124, 58, 237, 0.14) 0%, transparent 36%),
+    radial-gradient(circle at 88% 12%, rgba(56, 189, 248, 0.18) 0%, transparent 40%),
+    radial-gradient(circle at 50% 38%, rgba(255, 140, 66, 0.12) 0%, transparent 45%),
+    radial-gradient(circle at 18% 70%, rgba(16, 185, 129, 0.14) 0%, transparent 40%),
+    radial-gradient(circle at 82% 82%, rgba(236, 72, 153, 0.14) 0%, transparent 42%),
+    linear-gradient(180deg, #f5f8fc 0%, #edf2f9 50%, #f3f6fc 100%);
+  color: #0f172a;
+  --line: rgba(99, 102, 241, 0.18);
+  --muted: #586579;
+}
 .topbar { height:72px; border-bottom:1px solid var(--line); background:rgba(17,20,23,.86); -webkit-backdrop-filter:blur(16px); backdrop-filter:blur(16px); position:sticky; top:0; z-index:10; } .topbar-inner { max-width:1240px; height:100%; margin:auto; padding:0 28px; display:flex; align-items:center; justify-content:space-between; } .brand { display:flex; align-items:center; gap:10px; color:inherit; font-weight:700; letter-spacing:2px; text-decoration:none; } .brand span span { color:var(--orange); } .brand-mark { color:var(--orange); width:34px;height:34px; display:grid;place-items:center;border:1px solid var(--orange); transform:rotate(-5deg); } .main-nav { display:flex; align-items:center; gap:26px; } .nav-link { color:#8e959d; text-decoration:none; font-size:13px; display:flex; align-items:center; gap:7px; transition:color .2s; } .nav-link:hover,.nav-link.active { color:#fff; } .nav-link.active:after { content:''; width:4px;height:4px;background:var(--orange); border-radius:50%; margin-left:2px; } .theme-toggle,.icon-button { color:inherit; background:transparent; border:0; display:grid; place-items:center; padding:8px; } .theme-toggle:hover,.icon-button:hover { color:var(--orange); } .profile-chip { display:flex; gap:9px;align-items:center; font-size:12px; font-weight:600; } .avatar,.player-avatar { display:grid;place-items:center; background:var(--navy); color:var(--blue); width:30px;height:30px; border-radius:50%; font:11px 'DM Mono',monospace; } .menu-toggle { display:none; }
 .main-content { max-width:1240px; margin:auto; padding:62px 28px 80px; } .page-intro { display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:42px; } .eyebrow,.metric-label { color:var(--orange); font:500 10px 'DM Mono',monospace; letter-spacing:1.6px; } .eyebrow b { color:var(--gold); } h1,h2,p { margin:0; } h1 { font-size:clamp(38px,5vw,64px); line-height:1; letter-spacing:-2px; margin:16px 0 13px; } h1 em { color:var(--blue); font-style:normal; } .page-intro p { color:var(--muted); font-size:14px; } .system-status { color:#aeb5bc; font:11px 'DM Mono',monospace; display:flex;align-items:center;gap:8px; text-transform:uppercase;letter-spacing:.6px; } .pulse { width:7px;height:7px;background:#53d48e;border-radius:50%; box-shadow:0 0 0 4px rgba(83,212,142,.1); }
 .metrics-grid { display:grid; grid-template-columns:1.3fr 1fr 1fr; gap:14px; margin-bottom:22px; } .metric-card { min-height:170px; border:1px solid var(--line); padding:22px; background:rgba(26,30,34,.75); position:relative; overflow:hidden; } .metric-main { border-top:2px solid var(--orange); } .metric-icon { color:var(--orange); margin-bottom:17px; } .metric-top { display:flex;justify-content:space-between; color:#74808a; } .metric-top svg { color:var(--blue); } .metric-card strong { display:block; font-size:38px; line-height:1; margin:14px 0 10px; } .metric-trend { color:var(--muted); font:11px 'DM Mono',monospace; } .metric-trend b { color:#5ed395; font-weight:500; } .metric-card small { color:var(--muted); font-size:11px; } .metric-note { display:block; margin-top:25px; } .progress { height:4px;background:#30363b; margin:23px 0 8px; } .progress span { display:block;height:100%;background:var(--blue); } .sparkline { position:absolute; right:22px;bottom:25px; display:flex; align-items:end; gap:4px; height:38px; } .sparkline i { width:5px;background:var(--orange); opacity:.8; }.sparkline i:nth-child(1){height:13px}.sparkline i:nth-child(2){height:24px}.sparkline i:nth-child(3){height:17px}.sparkline i:nth-child(4){height:31px}.sparkline i:nth-child(5){height:22px}.sparkline i:nth-child(6){height:36px}.sparkline i:nth-child(7){height:30px}
@@ -58,16 +70,12 @@
 .story-footer-callout { padding:22px 26px; border:1px solid var(--line); background:rgba(26,30,34,.85); display:flex; justify-content:space-between; align-items:center; border-radius:6px; flex-wrap:wrap; gap:16px; }
 .story-footer-callout h3 { margin:6px 0 4px; font-size:17px; }
 .story-footer-callout p { color:var(--muted); font-size:12px; margin:0; }
-.app.light .hero-creator,.app.light .hero-stats-bar,.app.light .story-card,.app.light .story-footer-callout { background:rgba(255,255,255,.8); border-color:#c7d8db; }
-.app.light .creator-name { color:#152838; }
 .role-switch-btn { display:inline-flex; align-items:center; gap:6px; background:rgba(124,58,237,.15); color:#c4b5fd; border:1px solid rgba(124,58,237,.4); padding:5px 12px; border-radius:18px; font:500 11px 'DM Mono',monospace; cursor:pointer; transition:all .2s; }
 .role-switch-btn:hover { background:#7c3aed; color:#fff; transform:translateY(-1px); }
 .role-mode-banner { display:inline-flex; align-items:center; gap:8px; padding:6px 16px; border-radius:20px; font:500 11px 'DM Mono',monospace; margin-bottom:14px; }
 .role-mode-guest { background:rgba(111,200,232,.1); border:1px solid rgba(111,200,232,.3); color:var(--blue); }
 .role-mode-admin { background:rgba(124,58,237,.15); border:1px solid rgba(124,58,237,.4); color:#c4b5fd; }
 .guest-info-banner { margin:0 25px 15px; padding:10px 14px; background:rgba(111,200,232,.08); border-left:3px solid var(--blue); border-radius:0 4px 4px 0; display:flex; align-items:center; gap:10px; font-size:12px; color:#cbd5e1; }
-.app.light .guest-info-banner { background:rgba(0,102,204,.06); color:#334155; }
-.app.light .role-switch-btn { background:#f5f3ff; border-color:#c4b5fd; color:#6d28d9; }
 /* ADMIN LOGIN MODAL STYLES */
 .admin-login-modal { width:min(100%,460px); border-top:2px solid #7c3aed; }
 .admin-login-content { padding:28px 26px; }
@@ -187,18 +195,383 @@
 .top-games-footer-cta h3 { margin:6px 0 4px; font-size:18px; }
 .top-games-footer-cta p { color:var(--muted); font-size:13px; margin:0; }
 
-.app.light .top-one-showcase {
-  background:linear-gradient(135deg, rgba(16,185,129,0.12) 0%, #ffffff 60%, rgba(16,185,129,0.06) 100%);
-  border-color:rgba(16,185,129,0.4);
-}
-.app.light .top-one-title { color:#064e3b; text-shadow:none; }
-.app.light .top-one-description { color:#374151; }
-.app.light .top-one-card-side { border-left-color:rgba(16,185,129,0.2); }
-.app.light .feature-pill { background:rgba(16,185,129,0.08); color:#065f46; border-color:rgba(16,185,129,0.2); }
-.app.light .game-card { background:rgba(255,255,255,0.85); border-color:#c7d8db; }
-.app.light .game-title { color:#0f172a; }
-.app.light .game-tagline { color:#475569; }
-.app.light .top-games-footer-cta { background:rgba(255,255,255,0.85); border-color:#c7d8db; }
-.app.light .top-games-footer-cta h3 { color:#0f172a; }
+/* ==========================================================================
+   VIBRANT GAMER LIGHT MODE (Colorful Glows & Rich Glassmorphism)
+   ========================================================================== */
 
-.players-view-section { animation:rise .25s ease; }
+/* Topbar in Light Mode */
+.app.light .topbar {
+  background: rgba(255, 255, 255, 0.86);
+  border-bottom: 1px solid rgba(99, 102, 241, 0.22);
+  box-shadow: 0 4px 20px rgba(99, 102, 241, 0.08), 0 0 35px rgba(56, 189, 248, 0.06);
+}
+.app.light .brand-mark {
+  background: linear-gradient(135deg, rgba(255, 140, 66, 0.2), rgba(255, 208, 0, 0.3));
+  border-color: var(--orange);
+  box-shadow: 0 0 16px rgba(255, 140, 66, 0.4);
+}
+.app.light .nav-link {
+  color: #475569;
+  font-weight: 500;
+}
+.app.light .nav-link:hover,
+.app.light .nav-link.active {
+  color: #0f172a;
+}
+.app.light .nav-link.active:after {
+  background: linear-gradient(135deg, var(--orange), #a855f7);
+  box-shadow: 0 0 8px var(--orange);
+}
+
+/* User Role & Profile Chips in Light Mode */
+.app.light .role-mode-guest {
+  background: rgba(14, 165, 233, 0.12);
+  border-color: rgba(14, 165, 233, 0.35);
+  color: #0284c7;
+  box-shadow: 0 2px 10px rgba(14, 165, 233, 0.15);
+}
+.app.light .role-mode-admin {
+  background: rgba(124, 58, 237, 0.14);
+  border-color: rgba(124, 58, 237, 0.4);
+  color: #6d28d9;
+  box-shadow: 0 2px 10px rgba(124, 58, 237, 0.15);
+}
+.app.light .guest-info-banner {
+  background: linear-gradient(90deg, rgba(14, 165, 233, 0.12), rgba(99, 102, 241, 0.06));
+  border-left-color: #0284c7;
+  color: #1e293b;
+  box-shadow: 0 2px 10px rgba(14, 165, 233, 0.08);
+}
+.app.light .role-switch-btn {
+  background: linear-gradient(135deg, #f5f3ff, #ede9fe);
+  border-color: #c4b5fd;
+  color: #6d28d9;
+  box-shadow: 0 2px 8px rgba(124, 58, 237, 0.12);
+}
+.app.light .role-switch-btn:hover {
+  background: #7c3aed;
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(124, 58, 237, 0.35);
+}
+
+/* Hero Section in Light Mode */
+.app.light .hero-badge {
+  background: linear-gradient(135deg, rgba(255, 140, 66, 0.16), rgba(255, 208, 0, 0.24));
+  border-color: rgba(255, 140, 66, 0.45);
+  color: #c2410c;
+  box-shadow: 0 4px 18px rgba(255, 140, 66, 0.22);
+}
+.app.light .hero-title {
+  color: #0f172a;
+}
+.app.light .hero-title em {
+  color: #0284c7;
+  text-shadow: 0 0 30px rgba(2, 132, 199, 0.35), 0 2px 8px rgba(2, 132, 199, 0.2);
+}
+.app.light .hero-subtitle {
+  color: #475569;
+}
+.app.light .hero-creator {
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(124, 58, 237, 0.35);
+  box-shadow: 0 8px 24px rgba(124, 58, 237, 0.16);
+}
+.app.light .creator-name {
+  color: #4c1d95;
+}
+.app.light .hero-stats-bar {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  box-shadow: 0 14px 36px rgba(56, 189, 248, 0.15), 0 0 24px rgba(124, 58, 237, 0.08);
+}
+.app.light .stat-number {
+  color: #ea580c;
+  text-shadow: 0 2px 10px rgba(234, 88, 12, 0.25);
+}
+.app.light .stat-label {
+  color: #64748b;
+}
+
+/* Metric Cards with Distinct Colorful Glows */
+.app.light .metric-card {
+  border-radius: 12px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition: transform .25s ease, box-shadow .25s ease;
+}
+.app.light .metric-card:hover {
+  transform: translateY(-3px);
+}
+/* Total Players Card - Warm Sunset Orange Glow */
+.app.light .metric-main {
+  background: linear-gradient(145deg, rgba(255, 140, 66, 0.16) 0%, rgba(255, 255, 255, 0.95) 70%);
+  border: 1px solid rgba(255, 140, 66, 0.45);
+  border-top: 3px solid var(--orange);
+  box-shadow: 0 14px 34px rgba(255, 140, 66, 0.2), 0 0 20px rgba(255, 140, 66, 0.08) inset;
+}
+.app.light .metric-main strong {
+  color: #c2410c;
+  text-shadow: 0 2px 12px rgba(255, 140, 66, 0.25);
+}
+/* Active Now Card - Neon Cyan & Blue Glow */
+.app.light .metrics-grid .metric-card:nth-child(2) {
+  background: linear-gradient(145deg, rgba(14, 165, 233, 0.16) 0%, rgba(255, 255, 255, 0.95) 70%);
+  border: 1px solid rgba(14, 165, 233, 0.4);
+  border-top: 3px solid #0ea5e9;
+  box-shadow: 0 14px 34px rgba(14, 165, 233, 0.18), 0 0 20px rgba(14, 165, 233, 0.08) inset;
+}
+.app.light .metrics-grid .metric-card:nth-child(2) strong {
+  color: #0369a1;
+  text-shadow: 0 2px 12px rgba(14, 165, 233, 0.25);
+}
+.app.light .progress {
+  background: rgba(14, 165, 233, 0.15);
+}
+.app.light .progress span {
+  background: linear-gradient(90deg, #0ea5e9, #38bdf8);
+  box-shadow: 0 0 10px rgba(14, 165, 233, 0.5);
+}
+/* New this Month Card - Vivid Purple / Violet Glow */
+.app.light .metrics-grid .metric-card:nth-child(3) {
+  background: linear-gradient(145deg, rgba(168, 85, 247, 0.16) 0%, rgba(255, 255, 255, 0.95) 70%);
+  border: 1px solid rgba(168, 85, 247, 0.4);
+  border-top: 3px solid #a855f7;
+  box-shadow: 0 14px 34px rgba(168, 85, 247, 0.18), 0 0 20px rgba(168, 85, 247, 0.08) inset;
+}
+.app.light .metrics-grid .metric-card:nth-child(3) strong {
+  color: #7e22ce;
+  text-shadow: 0 2px 12px rgba(168, 85, 247, 0.25);
+}
+
+/* Workspace Panel & Table in Light Mode */
+.app.light .workspace-panel {
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  border-radius: 12px;
+  box-shadow: 0 18px 45px rgba(99, 102, 241, 0.1), 0 2px 10px rgba(0, 0, 0, 0.02);
+  overflow: hidden;
+}
+.app.light .panel-header {
+  border-bottom: 1px solid rgba(99, 102, 241, 0.12);
+}
+.app.light .search-box {
+  border-bottom: 2px solid rgba(99, 102, 241, 0.35);
+  color: #0f172a;
+}
+.app.light .search-box input {
+  color: #0f172a;
+}
+.app.light .search-box input::placeholder {
+  color: #64748b;
+}
+.app.light th {
+  background: linear-gradient(180deg, rgba(241, 245, 249, 0.95) 0%, rgba(248, 250, 252, 0.85) 100%);
+  color: #475569;
+  border-top-color: rgba(99, 102, 241, 0.18);
+  border-bottom-color: rgba(99, 102, 241, 0.18);
+}
+.app.light td {
+  border-bottom: 1px solid rgba(226, 232, 240, 0.85);
+  color: #1e293b;
+}
+.app.light tbody tr:hover {
+  background: linear-gradient(90deg, rgba(255, 140, 66, 0.08) 0%, rgba(124, 58, 237, 0.06) 100%);
+}
+.app.light .player-avatar {
+  background: linear-gradient(135deg, #dbeafe, #ede9fe);
+  color: #2563eb;
+  border: 1px solid rgba(37, 99, 235, 0.3);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.15);
+}
+.app.light .email {
+  color: #475569;
+}
+
+/* Architecture Story Cards with Colorful Themed Gradients */
+.app.light .story-card {
+  border-radius: 10px;
+  transition: transform .25s ease, box-shadow .25s ease;
+}
+.app.light .story-card:hover {
+  transform: translateY(-4px);
+}
+/* Card 1: Frontend (Cyan Glow) */
+.app.light .story-card:nth-child(1) {
+  background: linear-gradient(145deg, rgba(56, 189, 248, 0.15) 0%, rgba(255, 255, 255, 0.96) 75%);
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  box-shadow: 0 10px 28px rgba(56, 189, 248, 0.14);
+}
+/* Card 2: FastAPI (Orange Glow) */
+.app.light .story-card:nth-child(2) {
+  background: linear-gradient(145deg, rgba(255, 140, 66, 0.15) 0%, rgba(255, 255, 255, 0.96) 75%);
+  border: 1px solid rgba(255, 140, 66, 0.4);
+  box-shadow: 0 10px 28px rgba(255, 140, 66, 0.14);
+}
+/* Card 3: PostgreSQL 15 (Gold/Amber Glow) */
+.app.light .story-card:nth-child(3) {
+  background: linear-gradient(145deg, rgba(234, 179, 8, 0.15) 0%, rgba(255, 255, 255, 0.96) 75%);
+  border: 1px solid rgba(234, 179, 8, 0.45);
+  box-shadow: 0 10px 28px rgba(234, 179, 8, 0.16);
+}
+/* Card 4: Docker Compose (Sky Blue Glow) */
+.app.light .story-card:nth-child(4) {
+  background: linear-gradient(145deg, rgba(59, 130, 246, 0.15) 0%, rgba(255, 255, 255, 0.96) 75%);
+  border: 1px solid rgba(59, 130, 246, 0.4);
+  box-shadow: 0 10px 28px rgba(59, 130, 246, 0.14);
+}
+/* Card 5: JMeter Stress Test (Fire Red Glow) */
+.app.light .story-card:nth-child(5) {
+  background: linear-gradient(145deg, rgba(239, 68, 68, 0.15) 0%, rgba(255, 255, 255, 0.96) 75%);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  box-shadow: 0 10px 28px rgba(239, 68, 68, 0.16);
+}
+/* Card 6: Admin / Roles (Purple Glow) */
+.app.light .story-card:nth-child(6) {
+  background: linear-gradient(145deg, rgba(168, 85, 247, 0.15) 0%, rgba(255, 255, 255, 0.96) 75%);
+  border: 1px solid rgba(168, 85, 247, 0.4);
+  box-shadow: 0 10px 28px rgba(168, 85, 247, 0.15);
+}
+.app.light .story-card h3 {
+  color: #0f172a;
+}
+.app.light .story-card p {
+  color: #475569;
+}
+.app.light .tech-tags span {
+  background: rgba(255, 255, 255, 0.85);
+  border-color: rgba(99, 102, 241, 0.2);
+  color: #334155;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+}
+
+/* Callout & Create Strip Banners */
+.app.light .story-footer-callout {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.94) 0%, rgba(241, 245, 249, 0.96) 100%);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  box-shadow: 0 14px 36px rgba(99, 102, 241, 0.1);
+}
+.app.light .story-footer-callout h3 {
+  color: #0f172a;
+}
+.app.light .create-strip {
+  background: linear-gradient(135deg, rgba(255, 140, 66, 0.16) 0%, rgba(255, 208, 0, 0.14) 50%, rgba(56, 189, 248, 0.16) 100%);
+  border: 1px solid rgba(255, 140, 66, 0.45);
+  border-radius: 10px;
+  box-shadow: 0 14px 36px rgba(255, 140, 66, 0.16);
+}
+.app.light .create-strip h2 {
+  color: #0f172a;
+}
+
+/* TOP GAMES: Colorful Minecraft #1 Podium & Cards in Light Mode */
+.app.light .top-one-showcase {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.24) 0%, rgba(255, 255, 255, 0.96) 55%, rgba(255, 208, 0, 0.2) 100%);
+  border: 2px solid rgba(16, 185, 129, 0.6);
+  box-shadow: 0 20px 52px rgba(16, 185, 129, 0.24), 0 0 35px rgba(16, 185, 129, 0.14) inset;
+}
+.app.light .top-one-title {
+  color: #065f46;
+  text-shadow: 0 2px 16px rgba(16, 185, 129, 0.3);
+}
+.app.light .top-one-badge {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #ffffff;
+  border-color: #059669;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
+}
+.app.light .top-one-stat {
+  background: rgba(16, 185, 129, 0.2);
+  color: #065f46;
+  font-weight: 600;
+}
+.app.light .top-one-description {
+  color: #334155;
+}
+.app.light .podium-number {
+  color: #059669;
+  text-shadow: 0 2px 14px rgba(16, 185, 129, 0.35);
+}
+.app.light .podium-label {
+  color: #047857;
+}
+.app.light .top-one-card-side {
+  border-left-color: rgba(16, 185, 129, 0.35);
+}
+.app.light .feature-pill {
+  background: rgba(16, 185, 129, 0.12);
+  color: #065f46;
+  border-color: rgba(16, 185, 129, 0.35);
+}
+
+/* Individual Game Cards in Light Mode */
+.app.light .game-card {
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.96) 0%, rgba(248, 250, 252, 0.94) 100%);
+  border: 1px solid rgba(99, 102, 241, 0.22);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.04);
+}
+.app.light .game-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--game-accent, var(--orange));
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.08), 0 0 24px rgba(99, 102, 241, 0.18);
+}
+.app.light .game-title {
+  color: #0f172a;
+}
+.app.light .game-tagline {
+  color: #475569;
+}
+.app.light .game-tag-badge {
+  background: rgba(99, 102, 241, 0.1);
+  border-color: rgba(99, 102, 241, 0.25);
+  color: #4338ca;
+  font-weight: 600;
+}
+.app.light .game-feat-tag {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: rgba(99, 102, 241, 0.2);
+  color: #334155;
+}
+.app.light .top-games-footer-cta {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.94) 0%, rgba(241, 245, 249, 0.96) 100%);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  box-shadow: 0 14px 36px rgba(99, 102, 241, 0.1);
+}
+.app.light .top-games-footer-cta h3 {
+  color: #0f172a;
+}
+
+/* Modals & Login in Light Mode */
+.app.light .modal {
+  background: rgba(255, 255, 255, 0.98);
+  border: 1px solid rgba(124, 58, 237, 0.35);
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.18), 0 0 40px rgba(124, 58, 237, 0.18);
+}
+.app.light .admin-modal-icon {
+  background: #ede9fe;
+  color: #7c3aed;
+}
+.app.light .password-input-wrapper input {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+.app.light .password-input-wrapper input:focus {
+  border-color: #7c3aed;
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.2);
+}
+.app.light .toggle-password-btn:hover {
+  color: #0f172a;
+}
+.app.light .player-form input,
+.app.light .player-form select {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+.app.light .player-form input:focus,
+.app.light .player-form select:focus {
+  border-color: var(--orange);
+  box-shadow: 0 0 0 3px rgba(255, 140, 66, 0.2);
+}
+
+.players-view-section { animation: rise .25s ease; }
