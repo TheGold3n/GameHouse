@@ -13,12 +13,21 @@ from fastapi import FastAPI, HTTPException, status, Depends, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
+from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel, Field
 from sqlalchemy import create_engine, String, DateTime
 from sqlalchemy.orm import DeclarativeBase, sessionmaker, Session, Mapped, mapped_column
 from typing import List, Optional
 from datetime import datetime, timezone
 from enum import Enum
+
+from auth import (
+    hash_password,
+    verify_password,
+    create_access_token,
+    get_current_user,
+    require_admin
+)
 
 # ============================================================================
 # CONFIGURACIÓN DE BASE DE DATOS (Soporte SQLite y PostgreSQL / Render)
@@ -72,6 +81,7 @@ class PlayerModel(Base):
     playerName: Mapped[str] = mapped_column(String(100), nullable=False)
     phone: Mapped[str] = mapped_column(String(20), nullable=False)
     email: Mapped[str] = mapped_column(String(255), nullable=False, unique=True, index=True)
+    hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
     status: Mapped[str] = mapped_column(String(20), default="active")
     role: Mapped[str] = mapped_column(String(20), default="player")
     game: Mapped[Optional[str]] = mapped_column(String(100), default="Minecraft", nullable=True)
@@ -120,6 +130,21 @@ class Player(PlayerBase):
         from_attributes = True  # Para convertir objetos SQLAlchemy a Pydantic
 
 
+class UserRegister(BaseModel):
+    """Esquema de entrada para el registro de nuevos usuarios"""
+    playerName: str = Field(..., min_length=2, max_length=100)
+    phone: str = Field(..., min_length=5, max_length=20)
+    email: str = Field(..., pattern=r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
+    password: str = Field(..., min_length=6, max_length=100)
+    game: Optional[str] = Field(default="Minecraft")
+
+
+class TokenResponse(BaseModel):
+    """Esquema de respuesta para token de acceso JWT"""
+    access_token: str
+    token_type: str = "bearer"
+
+
 # ============================================================================
 # DEPENDENCIAS
 # ============================================================================
@@ -138,7 +163,7 @@ def get_db():
 # ============================================================================
 
 def ensure_schema():
-    """Asegura que las columnas requeridas (como game y role) existan en la tabla"""
+    """Asegura que las columnas requeridas (game, role y hashed_password) existan en la tabla"""
     try:
         from sqlalchemy import inspect, text
         inspector = inspect(engine)
@@ -149,30 +174,53 @@ def ensure_schema():
                 if "game" not in columns:
                     conn.execute(text("ALTER TABLE players ADD COLUMN game VARCHAR(100) DEFAULT 'Minecraft'"))
                     conn.commit()
-                    print("✓ Columna 'game' verificada/añadida a la tabla 'players'")
+                    print("[INFO] Columna 'game' verificada/añadida a la tabla 'players'")
                 if "role" not in columns:
                     conn.execute(text("ALTER TABLE players ADD COLUMN role VARCHAR(20) DEFAULT 'player'"))
                     conn.commit()
-                    print("✓ Columna 'role' verificada/añadida a la tabla 'players'")
+                    print("[INFO] Columna 'role' verificada/añadida a la tabla 'players'")
+                if "hashed_password" not in columns:
+                    default_hash = hash_password("Player.1234")
+                    conn.execute(text(f"ALTER TABLE players ADD COLUMN hashed_password VARCHAR(255) DEFAULT '{default_hash}'"))
+                    conn.commit()
+                    print("[INFO] Columna 'hashed_password' verificada/añadida a la tabla 'players'")
+            
+            # Garantizar que el usuario admin velvyn tenga rol admin y contraseña correcta
+            db = SessionLocal()
+            try:
+                admin_velvyn = db.query(PlayerModel).filter(
+                    (PlayerModel.playerName.ilike("velvyn")) | 
+                    (PlayerModel.email == "velvyn@gamehouse.admin")
+                ).first()
+                if admin_velvyn:
+                    admin_velvyn.role = "admin"
+                    admin_velvyn.hashed_password = hash_password("Velvyn.1234")
+                    db.commit()
+                    print("[INFO] Usuario administrador 'velvyn' actualizado con credenciales Bcrypt.")
+            except Exception as admin_err:
+                print(f"[WARN] Nota de actualización admin: {admin_err}")
+                db.rollback()
+            finally:
+                db.close()
     except Exception as e:
-        print(f"⚠️ Nota de verificación de esquema: {e}")
+        print(f"[WARN] Nota de verificación de esquema: {e}")
 
 
 def init_mock_data():
-    """Inicializa con datos de jugadores realistas con sus juegos actuales"""
+    """Inicializa con datos de jugadores realistas con sus juegos actuales y contraseñas hasheadas"""
     db = SessionLocal()
     try:
         # Detectar si hay datos viejos temporales (@tempgaming.local) para actualizarlos
         old_data = db.query(PlayerModel).filter(PlayerModel.email.like("%@tempgaming.local%")).first()
         if old_data:
-            print("🔄 Migrando datos antiguos a la nueva lista de jugadores realistas con juegos...")
+            print("[INFO] Migrando datos antiguos a la nueva lista de jugadores realistas con juegos...")
             db.query(PlayerModel).delete()
             db.commit()
         elif db.query(PlayerModel).count() >= 40:
-            print("✓ Base de datos ya contiene jugadores actualizados")
+            print("[INFO] Base de datos ya contiene jugadores actualizados")
             return
         
-        print("📝 Inicializando comunidad de jugadores activa...")
+        print("[INFO] Inicializando comunidad de jugadores activa...")
         
         # Lista realista de jugadores: (nombre, teléfono, email, estado, juego, rol)
         realistic_players = [
@@ -224,10 +272,12 @@ def init_mock_data():
         ]
 
         for playerName, phone, email, status_val, game_val, role_val in realistic_players:
+            initial_password = "Velvyn.1234" if role_val == "admin" else "Player.1234"
             player = PlayerModel(
                 playerName=playerName,
                 phone=phone,
                 email=email,
+                hashed_password=hash_password(initial_password),
                 status=status_val,
                 game=game_val,
                 role=role_val
@@ -236,10 +286,11 @@ def init_mock_data():
         
         db.commit()
         active_total = sum(1 for p in realistic_players if p[3] == "active")
-        print(f"✓ {len(realistic_players)} jugadores agregados ({active_total} activos en línea)")
+        print(f"[INFO] {len(realistic_players)} jugadores agregados ({active_total} activos en línea)")
+
     
     except Exception as e:
-        print(f"✗ Error al inicializar datos: {e}")
+        print(f"[ERROR] Error al inicializar datos: {e}")
         db.rollback()
     finally:
         db.close()
@@ -253,17 +304,17 @@ def init_mock_data():
 async def lifespan(app: FastAPI):
     """Ciclo de vida de la aplicación: se ejecuta al iniciar y al detener"""
     print("\n" + "="*60)
-    print("🚀 Iniciando GameHouse Player Management API")
+    print("[INIT] Iniciando GameHouse Player Management API")
     print("="*60)
-    print(f"📦 Base de datos: {DATABASE_URL}")
+    print(f"[DB] Base de datos: {DATABASE_URL}")
     try:
         Base.metadata.create_all(bind=engine)
         ensure_schema()
         init_mock_data()
     except Exception as e:
-        print(f"⚠️ Error en inicialización de base de datos: {e}")
-    print("✓ API lista en http://localhost:8000")
-    print("📚 Documentación: http://localhost:8000/docs\n")
+        print(f"[WARN] Error en inicialización de base de datos: {e}")
+    print("[OK] API lista en http://localhost:8000")
+    print("[DOCS] Documentación: http://localhost:8000/docs\n")
     yield
 
 # ============================================================================
@@ -302,10 +353,13 @@ async def api_info():
         "database": engine.dialect.name.upper(),
         "docs": "/docs",
         "endpoints": {
+            "register": "POST /api/auth/register",
+            "login": "POST /api/auth/login",
+            "me": "GET /api/auth/me",
             "get_all_players": "GET /api/players",
             "create_player": "POST /api/players",
-            "update_player": "PUT /api/players/{id}",
-            "delete_player": "DELETE /api/players/{id}",
+            "update_player": "PUT /api/players/{id} [Requires Admin JWT]",
+            "delete_player": "DELETE /api/players/{id} [Requires Admin JWT]",
             "health_check": "GET /health"
         }
     }
@@ -340,29 +394,89 @@ async def get_all_players(db: Session = Depends(get_db)):
 
 
 # ============================================================================
-# SEGURIDAD Y CLAVE DE ADMINISTRADOR
+# ENDPOINTS DE AUTENTICACIÓN (JWT & BCRYPT)
 # ============================================================================
 
-ADMIN_KEY = os.getenv("ADMIN_KEY", "Velvyn.1234")
-
-def require_admin(x_admin_key: Optional[str] = Header(None)):
-    """Verifica que la petición contenga la clave secreta de Administrador"""
-    if x_admin_key != ADMIN_KEY:
+@app.post("/api/auth/register", response_model=Player, status_code=status.HTTP_201_CREATED, tags=["Authentication"])
+async def register_player(user_data: UserRegister, db: Session = Depends(get_db)):
+    """
+    Registra un nuevo usuario en la plataforma con contraseña encriptada usando Bcrypt.
+    """
+    existing = db.query(PlayerModel).filter(PlayerModel.email == user_data.email).first()
+    if existing:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Acceso denegado: Se requiere autenticacion de Administrador (velvyn)."
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"El email '{user_data.email}' ya se encuentra registrado."
         )
-    return True
 
+    new_player = PlayerModel(
+        playerName=user_data.playerName,
+        phone=user_data.phone,
+        email=user_data.email,
+        hashed_password=hash_password(user_data.password),
+        status="active",
+        role="player",
+        game=user_data.game or "Minecraft"
+    )
+    db.add(new_player)
+    db.commit()
+    db.refresh(new_player)
+    return new_player
+
+
+@app.post("/api/auth/login", response_model=TokenResponse, tags=["Authentication"])
+async def login_for_access_token(
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    db: Session = Depends(get_db)
+):
+    """
+    Inicia sesión validando credenciales contra la BD y emite un token JWT Bearer (válido por 60 min).
+    """
+    user = db.query(PlayerModel).filter(
+        (PlayerModel.email == form_data.username) | 
+        (PlayerModel.playerName == form_data.username)
+    ).first()
+
+    if not user or not verify_password(form_data.password, user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Credenciales incorrectas (usuario o contraseña no válidos).",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    access_token = create_access_token(
+        data={
+            "sub": user.email,
+            "role": user.role,
+            "id": user.id,
+            "name": user.playerName
+        }
+    )
+    return {
+        "access_token": access_token,
+        "token_type": "bearer"
+    }
+
+
+@app.get("/api/auth/me", response_model=Player, tags=["Authentication"])
+async def get_current_user_profile(current_user: PlayerModel = Depends(get_current_user)):
+    """
+    Retorna los datos del usuario autenticado actualmente a partir de su token JWT Bearer.
+    """
+    return current_user
+
+
+# ============================================================================
+# ENDPOINTS MUTATIVOS Y CRUD PARA JUGADORES
+# ============================================================================
 
 @app.post("/api/players", response_model=Player, status_code=status.HTTP_201_CREATED, tags=["Players"])
 async def create_player(
     player_form: PlayerFormValues, 
-    db: Session = Depends(get_db),
-    x_admin_key: Optional[str] = Header(None)
+    db: Session = Depends(get_db)
 ):
     """
-    Crea un nuevo jugador.
+    Crea un nuevo jugador desde el panel general.
     
     Args:
         player_form (PlayerFormValues): Datos del nuevo jugador
@@ -374,26 +488,21 @@ async def create_player(
     Raises:
         HTTPException: Si el email ya existe
     """
-    # Verificar si el email ya existe
     existing = db.query(PlayerModel).filter(PlayerModel.email == player_form.email).first()
     if existing:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Email {player_form.email} already registered"
         )
-    
-    # Si un usuario común intenta registrarse como admin, forzar rol player
-    assigned_role = player_form.role or "player"
-    if assigned_role == "admin" and x_admin_key != ADMIN_KEY:
-        assigned_role = "player"
 
-    # Crear nuevo jugador
+    # Crear nuevo jugador con contraseña por defecto
     db_player = PlayerModel(
         playerName=player_form.playerName,
         phone=player_form.phone,
         email=player_form.email,
+        hashed_password=hash_password("Player.1234"),
         status=player_form.status,
-        role=assigned_role,
+        role="player",
         game=player_form.game or "Minecraft"
     )
     
@@ -409,10 +518,11 @@ async def update_player(
     player_id: int, 
     player_form: PlayerFormValues, 
     db: Session = Depends(get_db),
-    is_admin: bool = Depends(require_admin)
+    current_admin: PlayerModel = Depends(require_admin)
 ):
     """
-    Actualiza un jugador existente.
+    Actualiza un jugador existente (Requiere privilegios de Administrador con JWT).
+
     
     Args:
         player_id (int): ID del jugador
@@ -462,10 +572,11 @@ async def update_player(
 async def delete_player(
     player_id: int, 
     db: Session = Depends(get_db), 
-    is_admin: bool = Depends(require_admin)
+    current_admin: PlayerModel = Depends(require_admin)
 ):
     """
-    Elimina un jugador.
+    Elimina un jugador (Requiere privilegios de Administrador con JWT).
+
     
     Args:
         player_id (int): ID del jugador a eliminar

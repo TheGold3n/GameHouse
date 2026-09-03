@@ -56,7 +56,10 @@ export const playerService = {
     try {
       const headers: Record<string, string> = { 'Content-Type': 'application/json' }
       const token = localStorage.getItem('gamehouse_admin_token')
-      if (token) headers['x-admin-key'] = token
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`
+        headers['x-admin-key'] = token
+      }
 
       const response = await fetch(`${API_BASE_URL}/${id}`, {
         method: 'PUT',
@@ -78,7 +81,10 @@ export const playerService = {
     try {
       const headers: Record<string, string> = {}
       const token = localStorage.getItem('gamehouse_admin_token')
-      if (token) headers['x-admin-key'] = token
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`
+        headers['x-admin-key'] = token
+      }
 
       const response = await fetch(`${API_BASE_URL}/${id}`, {
         method: 'DELETE',

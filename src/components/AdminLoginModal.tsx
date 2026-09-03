@@ -17,22 +17,56 @@ export function AdminLoginModal({ isOpen, onClose, onSuccess }: AdminLoginModalP
 
   if (!isOpen) return null
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     setError(null)
     setIsVerifying(true)
 
-    setTimeout(() => {
+    try {
+      const formData = new URLSearchParams()
+      formData.append('username', 'velvyn')
+      formData.append('password', password)
+
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: formData.toString(),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        localStorage.setItem('gamehouse_admin_token', data.access_token)
+        setPassword('')
+        setIsVerifying(false)
+        onSuccess()
+        return
+      }
+
+      // Fallback local en caso de que la contraseña coincida directamente
+      if (password === ADMIN_PASSWORD) {
+        localStorage.setItem('gamehouse_admin_token', ADMIN_PASSWORD)
+        setPassword('')
+        setIsVerifying(false)
+        onSuccess()
+        return
+      }
+
+      setError('Contraseña incorrecta. Solo el administrador velvyn tiene acceso autorizado.')
+      setIsVerifying(false)
+    } catch {
+      // Si falla la red, permitir validación directa de fallback
       if (password === ADMIN_PASSWORD) {
         localStorage.setItem('gamehouse_admin_token', ADMIN_PASSWORD)
         setPassword('')
         setIsVerifying(false)
         onSuccess()
       } else {
-        setError('Contraseña incorrecta. Solo el administrador velvyn tiene acceso autorizado.')
+        setError('Error al verificar credenciales con el servidor.')
         setIsVerifying(false)
       }
-    }, 400)
+    }
   }
 
   return (
