@@ -1,13 +1,14 @@
-import { ArrowDown, Cpu, Database, Flame, Globe, Layers, Plus, Shield, Sparkles, Terminal, User, ShieldCheck } from 'lucide-react'
+import { ArrowDown, Cpu, Database, Flame, Globe, Layers, Plus, Shield, Sparkles, Terminal, User, ShieldCheck, Users } from 'lucide-react'
 
 interface WelcomeLandingProps {
   onAddPlayer: () => void
+  onGoToPlayers?: () => void
   totalPlayers: number
   activePlayers: number
   userRole?: 'guest' | 'admin'
 }
 
-export function WelcomeLanding({ onAddPlayer, totalPlayers, activePlayers, userRole = 'guest' }: WelcomeLandingProps) {
+export function WelcomeLanding({ onAddPlayer, onGoToPlayers, totalPlayers, activePlayers, userRole = 'guest' }: WelcomeLandingProps) {
   const scrollToSection = (id: string) => {
     const el = document.getElementById(id)
     if (el) {
@@ -21,19 +22,19 @@ export function WelcomeLanding({ onAddPlayer, totalPlayers, activePlayers, userR
       <div className="hero-section">
         <div className="hero-badge">
           <Sparkles size={14} className="hero-badge-icon" />
-          <span>FULL-STACK ECOSYSTEM • DOCKERIZED</span>
+          <span>FULL-STACK ECOSYSTEM • POSTGRESQL & DOCKER</span>
         </div>
 
         {/* ROLE NOTICE BANNER */}
         {userRole === 'guest' ? (
           <div className="role-mode-banner role-mode-guest">
             <User size={14} />
-            <span>Vista de <strong>Visitante / Usuario Nuevo</strong> — Explora el proyecto y regístrate abajo.</span>
+            <span>Vista de <strong>Visitante / Usuario Nuevo</strong> — Explora los juegos más jugados y regístrate en el roster.</span>
           </div>
         ) : (
           <div className="role-mode-banner role-mode-admin">
             <ShieldCheck size={14} />
-            <span>Vista de <strong>Administrador (velvyn)</strong> — Edición y eliminación habilitadas.</span>
+            <span>Vista de <strong>Administrador (velvyn)</strong> — Edición y eliminación de jugadores habilitadas.</span>
           </div>
         )}
 
@@ -42,8 +43,8 @@ export function WelcomeLanding({ onAddPlayer, totalPlayers, activePlayers, userR
         </h1>
 
         <p className="hero-subtitle">
-          Plataforma interactiva de gestión de jugadores diseñada con arquitectura de micro-servicios, 
-          API REST de alta velocidad y base de datos relacional persistente.
+          Plataforma gamer de gestión de jugadores diseñada con arquitectura moderna, 
+          API REST en FastAPI, base de datos relacional PostgreSQL/SQLite y vitrina de títulos competitivos.
         </p>
 
         {/* ADMIN CREATOR TAG */}
@@ -60,11 +61,16 @@ export function WelcomeLanding({ onAddPlayer, totalPlayers, activePlayers, userR
 
         {/* CALL TO ACTION BUTTONS */}
         <div className="hero-actions">
-          <button className="button button-primary hero-btn-main" onClick={() => scrollToSection('roster')}>
-            🎮 Explorar Jugadores ({totalPlayers})
+          {onGoToPlayers && (
+            <button className="button button-primary hero-btn-main" onClick={onGoToPlayers}>
+              <Users size={16} /> Ver Roster de Jugadores ({totalPlayers})
+            </button>
+          )}
+          <button className="button button-secondary hero-btn-sub" onClick={() => scrollToSection('top-games')}>
+            <Flame size={16} /> Juegos Más Jugados
           </button>
           <button className="button button-secondary hero-btn-sub" onClick={() => scrollToSection('architecture-story')}>
-            <Layers size={16} /> Ver Arquitectura & Stack
+            <Layers size={16} /> Arquitectura & Render
           </button>
           <button className="button button-outline hero-btn-sub" onClick={onAddPlayer}>
             <Plus size={16} /> Registrarme
@@ -156,17 +162,18 @@ export function WelcomeLanding({ onAddPlayer, totalPlayers, activePlayers, userR
             <div className="card-icon card-icon-gold">
               <Database size={22} />
             </div>
-            <div className="card-tag">CAPA DE DATOS</div>
-            <h3>Base de Datos SQLite Persistente</h3>
+            <div className="card-tag">CAPA DE DATOS • POSTGRESQL & RENDER</div>
+            <h3>PostgreSQL 15 & SQLite Persistente</h3>
             <p>
-              Migrado de almacenamiento volátil en memoria a <strong>SQLite</strong> con <strong>SQLAlchemy 2.0 ORM</strong>. 
-              Garantiza integridad de correos únicos, control de roles (<code>admin</code> y <code>player</code>) y persistencia íntegra.
+              Persistencia relacional empresarial con <strong>PostgreSQL 15</strong> y compatibilidad con <strong>SQLite</strong> local mediante <strong>SQLAlchemy 2.0 ORM</strong>. 
+              Listo para despliegue en <strong>Render</strong> con soporte de <code>TIMESTAMPTZ</code>, pool_pre_ping y conversión automática de dialectos.
             </p>
             <div className="tech-tags">
-              <span>SQLite</span>
+              <span>PostgreSQL 15</span>
               <span>SQLAlchemy 2.0</span>
-              <span>Roles & Permisos</span>
-              <span>Auto-seed</span>
+              <span>Render Ready</span>
+              <span>Psycopg2</span>
+              <span>TIMESTAMPTZ</span>
             </div>
           </div>
 
@@ -176,16 +183,16 @@ export function WelcomeLanding({ onAddPlayer, totalPlayers, activePlayers, userR
               <Terminal size={22} />
             </div>
             <div className="card-tag">INFRAESTRUCTURA & DEVOPS</div>
-            <h3>Docker Compose & Nginx Proxy</h3>
+            <h3>Docker Compose Multi-Contenedor</h3>
             <p>
-              Empaquetado en contenedores independientes. El frontend corre sobre un servidor <strong>Nginx</strong> multi-etapa 
-              que redirige internamente las llamadas a <code>/api/</code> hacia FastAPI, eliminando problemas de CORS y con volúmenes persistentes.
+              Empaquetado en microservicios independientes: <code>db</code> (PostgreSQL 15 Alpine con healthcheck), <code>backend</code> (FastAPI) y <code>frontend</code> (Nginx). 
+              Con volúmenes persistentes y sin colisiones de CORS.
             </p>
             <div className="tech-tags">
               <span>Docker</span>
               <span>Docker Compose</span>
+              <span>Postgres 15</span>
               <span>Nginx Proxy</span>
-              <span>Alpine Linux</span>
             </div>
           </div>
 
@@ -230,13 +237,19 @@ export function WelcomeLanding({ onAddPlayer, totalPlayers, activePlayers, userR
         {/* TRANSICIÓN AL PANEL EN VIVO */}
         <div className="story-footer-callout">
           <div>
-            <span className="eyebrow">SISTEMA EN TIEMPO REAL</span>
-            <h3>Explora el Roster de Jugadores a continuación</h3>
-            <p>Interactúa con la base de datos en vivo: busca, ordena, crea tu propio jugador o prueba la edición.</p>
+            <span className="eyebrow">GESTIÓN DE LA COMUNIDAD</span>
+            <h3>Explora el Roster de Jugadores en su página dedicada</h3>
+            <p>Administra jugadores en la base de datos PostgreSQL: busca en tiempo real, ordena, registra o actualiza perfiles.</p>
           </div>
-          <button className="button button-primary" onClick={() => scrollToSection('roster')}>
-            Ir al Panel de Control <ArrowDown size={15} />
-          </button>
+          {onGoToPlayers ? (
+            <button className="button button-primary" onClick={onGoToPlayers}>
+              Ir a la Página de Jugadores <Users size={16} />
+            </button>
+          ) : (
+            <button className="button button-primary" onClick={() => scrollToSection('roster')}>
+              Ir al Panel de Control <ArrowDown size={15} />
+            </button>
+          )}
         </div>
       </div>
     </section>

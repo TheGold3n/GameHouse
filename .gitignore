@@ -23,8 +23,10 @@ dist-ssr
 *.sln
 *.sw?
 
-# Python
+# Python & Databases
 venv/
 backend/venv/
 __pycache__/
 *.pyc
+*.db
+*.sqlite3

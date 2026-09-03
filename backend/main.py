@@ -9,7 +9,6 @@ Documentation at http://localhost:8000/docs
 
 import os
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, HTTPException, status, Depends
 from fastapi import FastAPI, HTTPException, status, Depends, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -22,11 +21,15 @@ from datetime import datetime, timezone
 from enum import Enum
 
 # ============================================================================
-# CONFIGURACIÓN DE BASE DE DATOS
+# CONFIGURACIÓN DE BASE DE DATOS (Soporte SQLite y PostgreSQL / Render)
 # ============================================================================
 
-# URL de conexión a SQLite (configurable vía variable de entorno)
+# URL de conexión (configurable vía variable de entorno con fallback a SQLite local)
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./players.db")
+
+# Render y SQLAlchemy 2.0 fix: Render expone "postgres://", pero SQLAlchemy 2.0 requiere "postgresql://"
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
 # Si es SQLite con ruta de archivo, asegurar que el directorio exista
 if DATABASE_URL.startswith("sqlite:///") and not DATABASE_URL.startswith("sqlite:///:memory:"):
@@ -35,10 +38,19 @@ if DATABASE_URL.startswith("sqlite:///") and not DATABASE_URL.startswith("sqlite
     if db_dir and not os.path.exists(db_dir):
         os.makedirs(db_dir, exist_ok=True)
 
+# Configuración del motor según el motor de base de datos
+engine_kwargs = {}
+if DATABASE_URL.startswith("sqlite"):
+    # Requerido solo para SQLite debido a multithreading en FastAPI
+    engine_kwargs["connect_args"] = {"check_same_thread": False}
+else:
+    # Para PostgreSQL en la nube (Render / Docker), mantener vivas las conexiones inactivas
+    engine_kwargs["pool_pre_ping"] = True
+
 # Crear motor de BD
 engine = create_engine(
     DATABASE_URL,
-    connect_args={"check_same_thread": False}  # Necesario solo para SQLite
+    **engine_kwargs
 )
 
 # Crear sesión
@@ -63,12 +75,15 @@ class PlayerModel(Base):
     status: Mapped[str] = mapped_column(String(20), default="active")
     role: Mapped[str] = mapped_column(String(20), default="player")
     registeredAt: Mapped[datetime] = mapped_column(
-        DateTime, default=lambda: datetime.now(timezone.utc)
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
 
 
 # Crear todas las tablas (si no existen)
-Base.metadata.create_all(bind=engine)
+try:
+    Base.metadata.create_all(bind=engine)
+except Exception as err:
+    print(f"⚠️ Advertencia inicial en create_all (se reintentará en lifespan): {err}")
 
 # ============================================================================
 # ESQUEMAS PYDANTIC (Para API)
@@ -164,17 +179,30 @@ def init_mock_data():
             ("EnigmaFox", "+1-123-456-7892", "enigmafox@tempgaming.local", "inactive"),
         ]
         
+        # Asegurar creación del administrador velvyn si no existe
+        admin_user = db.query(PlayerModel).filter(PlayerModel.playerName.ilike("velvyn")).first()
+        if not admin_user:
+            admin_user = PlayerModel(
+                playerName="velvyn",
+                phone="+1-555-0100",
+                email="velvyn@gamehouse.admin",
+                status="active",
+                role="admin"
+            )
+            db.add(admin_user)
+
         for playerName, phone, email, status_val in mock_data:
             player = PlayerModel(
                 playerName=playerName,
                 phone=phone,
                 email=email,
-                status=status_val
+                status=status_val,
+                role="player"
             )
             db.add(player)
         
         db.commit()
-        print(f"✓ {len(mock_data)} jugadores agregados a la BD")
+        print(f"✓ {len(mock_data) + 1} jugadores (incluyendo Admin velvyn) agregados a la BD")
     
     except Exception as e:
         print(f"✗ Error al inicializar datos: {e}")
@@ -183,7 +211,6 @@ def init_mock_data():
         db.close()
 
 
-# ============================================================================
 # ============================================================================
 # LIFESPAN (Inicializar BD al iniciar y limpieza al cerrar)
 # ============================================================================
@@ -195,7 +222,11 @@ async def lifespan(app: FastAPI):
     print("🚀 Iniciando GameHouse Player Management API")
     print("="*60)
     print(f"📦 Base de datos: {DATABASE_URL}")
-    init_mock_data()
+    try:
+        Base.metadata.create_all(bind=engine)
+        init_mock_data()
+    except Exception as e:
+        print(f"⚠️ Error en inicialización de base de datos: {e}")
     print("✓ API lista en http://localhost:8000")
     print("📚 Documentación: http://localhost:8000/docs\n")
     yield
@@ -233,7 +264,7 @@ async def api_info():
     return {
         "message": "GameHouse Player Management API",
         "version": "1.0.0",
-        "database": "SQLite",
+        "database": engine.dialect.name.upper(),
         "docs": "/docs",
         "endpoints": {
             "get_all_players": "GET /api/players",
@@ -290,7 +321,6 @@ def require_admin(x_admin_key: Optional[str] = Header(None)):
 
 
 @app.post("/api/players", response_model=Player, status_code=status.HTTP_201_CREATED, tags=["Players"])
-async def create_player(player_form: PlayerFormValues, db: Session = Depends(get_db)):
 async def create_player(
     player_form: PlayerFormValues, 
     db: Session = Depends(get_db),
@@ -301,7 +331,6 @@ async def create_player(
     
     Args:
         player_form (PlayerFormValues): Datos del nuevo jugador
-        player_form (PlayerFormValues): Datos del jugador a crear
         db: Sesión de base de datos
     
     Returns:
@@ -309,7 +338,6 @@ async def create_player(
     
     Raises:
         HTTPException: Si el email ya existe
-        HTTPException: Si el email ya está registrado
     """
     # Verificar si el email ya existe
     existing = db.query(PlayerModel).filter(PlayerModel.email == player_form.email).first()
@@ -330,7 +358,6 @@ async def create_player(
         phone=player_form.phone,
         email=player_form.email,
         status=player_form.status,
-        role=player_form.role or "player"
         role=assigned_role
     )
     
@@ -342,7 +369,6 @@ async def create_player(
 
 
 @app.put("/api/players/{player_id}", response_model=Player, tags=["Players"])
-async def update_player(player_id: int, player_form: PlayerFormValues, db: Session = Depends(get_db)):
 async def update_player(
     player_id: int, 
     player_form: PlayerFormValues, 
@@ -395,7 +421,6 @@ async def update_player(
 
 
 @app.delete("/api/players/{player_id}", tags=["Players"])
-async def delete_player(player_id: int, db: Session = Depends(get_db)):
 async def delete_player(
     player_id: int, 
     db: Session = Depends(get_db), 

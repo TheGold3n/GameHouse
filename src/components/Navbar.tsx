@@ -1,32 +1,107 @@
-import { Gamepad2, LayoutDashboard, Menu, Moon, Sun, Activity, X, ShieldCheck, User } from 'lucide-react'
-import { Gamepad2, LayoutDashboard, Menu, Moon, Sun, Activity, X, ShieldCheck, LogOut } from 'lucide-react'
+import { Gamepad2, LayoutDashboard, Menu, Moon, Sun, Activity, X, ShieldCheck, User, LogOut, Users, Flame } from 'lucide-react'
 import { useState } from 'react'
+
+export type AppPage = 'dashboard' | 'players' | 'flow'
 
 interface NavbarProps {
   isDark: boolean
   onToggleTheme: () => void
-  currentPage: 'dashboard' | 'flow'
-  onPageChange: (page: 'dashboard' | 'flow') => void
+  currentPage: AppPage
+  onPageChange: (page: AppPage) => void
   userRole: 'guest' | 'admin'
   onToggleRole: () => void
   onOpenLogin: () => void
   onLogout: () => void
 }
 
-export function Navbar({ isDark, onToggleTheme, currentPage, onPageChange, userRole, onToggleRole }: NavbarProps) {
-export function Navbar({ isDark, onToggleTheme, currentPage, onPageChange, userRole, onOpenLogin, onLogout }: NavbarProps) {
+export function Navbar({
+  isDark,
+  onToggleTheme,
+  currentPage,
+  onPageChange,
+  userRole,
+  onToggleRole,
+  onOpenLogin,
+  onLogout
+}: NavbarProps) {
   const [menuOpen, setMenuOpen] = useState(false)
+
+  const handleNavClick = (page: AppPage, scrollId?: string) => {
+    onPageChange(page)
+    setMenuOpen(false)
+    if (scrollId) {
+      setTimeout(() => {
+        document.getElementById(scrollId)?.scrollIntoView({ behavior: 'smooth' })
+      }, 80)
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+  }
+
   return (
     <header className="topbar">
       <div className="topbar-inner">
-        <a className="brand" href="#top" aria-label="GameHouse home"><span className="brand-mark"><Gamepad2 size={21} /></span><span>GAME<span>HOUSE</span></span></a>
-        <button className="icon-button menu-toggle" aria-label="Toggle menu" onClick={() => setMenuOpen(!menuOpen)}>{menuOpen ? <X /> : <Menu />}</button>
+        <a 
+          className="brand" 
+          href="#top" 
+          onClick={(e) => { e.preventDefault(); handleNavClick('dashboard') }} 
+          aria-label="GameHouse home"
+        >
+          <span className="brand-mark"><Gamepad2 size={21} /></span>
+          <span>GAME<span>HOUSE</span></span>
+        </a>
+
+        <button 
+          className="icon-button menu-toggle" 
+          aria-label="Toggle menu" 
+          onClick={() => setMenuOpen(!menuOpen)}
+        >
+          {menuOpen ? <X /> : <Menu />}
+        </button>
+
         <nav className={menuOpen ? 'main-nav open' : 'main-nav'}>
-          <button className={`nav-link ${currentPage === 'dashboard' ? 'active' : ''}`} onClick={() => { onPageChange('dashboard'); setMenuOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }) }}><LayoutDashboard size={17} /> Inicio</button>
-          <button className="nav-link" onClick={() => { onPageChange('dashboard'); setMenuOpen(false); setTimeout(() => document.getElementById('architecture-story')?.scrollIntoView({ behavior: 'smooth' }), 50) }}>Arquitectura</button>
-          <button className="nav-link" onClick={() => { onPageChange('dashboard'); setMenuOpen(false); setTimeout(() => document.getElementById('roster')?.scrollIntoView({ behavior: 'smooth' }), 50) }}>Jugadores</button>
-          <button className={`nav-link ${currentPage === 'flow' ? 'active' : ''}`} onClick={() => { onPageChange('flow'); setMenuOpen(false) }}><Activity size={17} /> Auditoría en Vivo</button>
-          <button className="theme-toggle" onClick={onToggleTheme} aria-label={`Switch to ${isDark ? 'light' : 'dark'} theme`}>{isDark ? <Sun size={17} /> : <Moon size={17} />}</button>
+          <button 
+            className={`nav-link ${currentPage === 'dashboard' ? 'active' : ''}`} 
+            onClick={() => handleNavClick('dashboard')}
+          >
+            <LayoutDashboard size={16} /> Inicio
+          </button>
+
+          <button 
+            className="nav-link" 
+            onClick={() => handleNavClick('dashboard', 'top-games')}
+          >
+            <Flame size={16} /> Juegos Más Jugados
+          </button>
+
+          <button 
+            className="nav-link" 
+            onClick={() => handleNavClick('dashboard', 'architecture-story')}
+          >
+            Arquitectura
+          </button>
+
+          <button 
+            className={`nav-link ${currentPage === 'players' ? 'active' : ''}`} 
+            onClick={() => handleNavClick('players')}
+          >
+            <Users size={16} /> Roster Jugadores
+          </button>
+
+          <button 
+            className={`nav-link ${currentPage === 'flow' ? 'active' : ''}`} 
+            onClick={() => handleNavClick('flow')}
+          >
+            <Activity size={16} /> Auditoría en Vivo
+          </button>
+
+          <button 
+            className="theme-toggle" 
+            onClick={onToggleTheme} 
+            aria-label={`Switch to ${isDark ? 'light' : 'dark'} theme`}
+          >
+            {isDark ? <Sun size={17} /> : <Moon size={17} />}
+          </button>
           
           {/* PERFIL Y SELECTOR DE ROL */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -42,26 +117,24 @@ export function Navbar({ isDark, onToggleTheme, currentPage, onPageChange, userR
               </div>
             )}
 
-            <button
-              className="role-switch-btn"
-              onClick={onToggleRole}
-              title={userRole === 'admin' ? 'Cambiar a modo Visitante' : 'Cambiar a modo Administrador (velvyn)'}
-            >
-              {userRole === 'admin' ? (
-                <><User size={13} /> <span>Ver como Visitante</span></>
-              ) : (
-                <><ShieldCheck size={13} /> <span>Acceso Admin</span></>
-              )}
-            </button>
             {userRole === 'admin' ? (
-              <button
-                className="role-switch-btn"
-                onClick={onLogout}
-                title="Cerrar sesión de Administrador"
-                style={{ background: 'rgba(239, 68, 68, 0.15)', borderColor: 'rgba(239, 68, 68, 0.4)', color: '#fca5a5' }}
-              >
-                <LogOut size={13} /> <span>Cerrar Sesión</span>
-              </button>
+              <>
+                <button
+                  className="role-switch-btn"
+                  onClick={onToggleRole}
+                  title="Alternar a vista de Visitante para pruebas"
+                >
+                  <User size={13} /> <span>Ver como Visitante</span>
+                </button>
+                <button
+                  className="role-switch-btn"
+                  onClick={onLogout}
+                  title="Cerrar sesión de Administrador"
+                  style={{ background: 'rgba(239, 68, 68, 0.15)', borderColor: 'rgba(239, 68, 68, 0.4)', color: '#fca5a5' }}
+                >
+                  <LogOut size={13} /> <span>Cerrar Sesión</span>
+                </button>
+              </>
             ) : (
               <button
                 className="role-switch-btn"
