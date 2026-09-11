@@ -7,7 +7,7 @@
 ## 📦 Instalación (1 minuto)
 
 ```bash
-cd "c:\Users\Tokyotech\Desktop\mini proyecto crud usando api"
+cd "tu/carpeta/del/proyecto"
 npm install
 npm run dev
 ```

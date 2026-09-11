@@ -5,7 +5,15 @@ FastAPI Backend para GameHouse Player Management System
 CRUD API con base de datos SQLite usando SQLAlchemy.
 Endpoints available at http://localhost:8000/api/players
 Documentation at http://localhost:8000/docs
+
+* ADVERTENCIA LEGAL SOBRE MIDDLEWARE/PROXY EN PRODUCCIÓN *
+Al integrar estos endpoints o utilizar este servicio como middleware transaccional
+en entornos de producción, la responsabilidad recae exclusivamente en el consumidor.
+El software se proporciona "AS IS", sin garantías de ningún tipo.
 """
+
+__author__ = "Velvyn"
+__license__ = "MIT"
 
 import os
 from contextlib import asynccontextmanager
@@ -325,6 +333,7 @@ app = FastAPI(
     title="GameHouse Player Management API",
     description="CRUD API para gestionar jugadores con SQLite",
     version="1.0.0",
+    license_info={"name": "MIT", "url": "https://opensource.org/licenses/MIT"},
     lifespan=lifespan
 )
 

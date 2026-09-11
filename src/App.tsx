@@ -65,10 +65,15 @@ function Dashboard() {
   const handleSearch = useCallback((searchQuery: string) => {
     setQuery(searchQuery)
     setPage(1)
-    if (searchQuery.trim()) {
-      addEvent('search', 'Players', `Searching for: "${searchQuery}"`, { query: searchQuery })
-    }
-  }, [addEvent])
+  }, [])
+
+  useEffect(() => {
+    if (!query.trim()) return
+    const timer = setTimeout(() => {
+      addEvent('search', 'Players', `Searching for: "${query}"`, { query })
+    }, 500)
+    return () => clearTimeout(timer)
+  }, [query, addEvent])
 
   const handleSort = useCallback((key: keyof Player) => {
     const nextDirection = (sortKey === key && sortDirection === 'asc') ? 'desc' : 'asc'

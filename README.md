@@ -213,3 +213,22 @@ Para más detalles, ver: **[FRONTEND_DOCUMENTATION.md](./FRONTEND_DOCUMENTATION.
 ✅ **Listo para:** Conectar backend
 
 🎮 **¡El frontend está listo para recibir el backend!**
+
+---
+
+## ⚖️ Licencia y Aviso Legal
+
+**Titular y Autor:** Velvyn (Chile)
+
+Este proyecto y su código fuente se distribuyen bajo la **[Licencia MIT](./LICENSE)**. 
+
+### Permisos:
+- Uso comercial y personal.
+- Modificación del código fuente.
+- Distribución de copias y versiones modificadas.
+
+### Restricciones y Condiciones:
+- Se debe incluir una copia de la licencia y el aviso de copyright original en cualquier distribución.
+- **Aviso de Exención de Garantía (AS IS):** El software se proporciona "tal cual", sin garantías de ningún tipo (expresas o implícitas). El autor no será responsable por ninguna pérdida de datos, interrupciones, daños directos o indirectos, o fallos en entornos de producción derivados del uso, integración (como middleware o proxy), o distribución de este software.
+
+*Para detalles completos, consulte el archivo `LICENSE` adjunto.*

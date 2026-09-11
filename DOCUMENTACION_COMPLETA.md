@@ -140,7 +140,7 @@ src/
 
 ### 3.2 Landing Page & Hero de Bienvenida
 
-Al ingresar a la aplicación, los usuarios son recibidos por el componente [WelcomeLanding.tsx](file:///c:/Users/Tokyotech/Desktop/mini%20proyecto%20crud%20usando%20api/src/components/WelcomeLanding.tsx):
+Al ingresar a la aplicación, los usuarios son recibidos por el componente [WelcomeLanding.tsx]
 * **Insignia Superior**: Identificador `⚡ FULL-STACK ECOSYSTEM • DOCKERIZED`.
 * **Insignia del Administrador**: Reconocimiento visible de **`velvyn`** como creador y administrador del sistema.
 * **Barra de Métricas**: Estadísticas instantáneas de jugadores totales, jugadores en línea, latencia de la API y nivel de dockerización.
@@ -177,7 +177,7 @@ El sistema cuenta con un control de acceso interactivo en el cliente:
 
 ### 3.4 Gestión de Estado y Consumo de API
 
-El servicio [playerService.ts](file:///c:/Users/Tokyotech/Desktop/mini%20proyecto%20crud%20usando%20api/src/services/playerService.ts) se comunica mediante peticiones relativas a `/api/players`:
+El servicio [playerService.ts](./src/services/playerService.ts) se comunica mediante peticiones relativas a `/api/players`:
 * `getPlayers()`: `GET /api/players` → Obtiene la lista completa.
 * `createPlayer(data)`: `POST /api/players` → Crea un jugador.
 * `updatePlayer(id, data)`: `PUT /api/players/{id}` → Modifica un jugador existente.
